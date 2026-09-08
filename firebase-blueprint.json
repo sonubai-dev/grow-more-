@@ -1,0 +1,247 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile with role-based access control",
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "format": "email",
+          "maxLength": 150
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "role": {
+          "type": "string",
+          "enum": ["business", "admin"]
+        },
+        "createdAt": {
+          "type": "string"
+        },
+        "updatedAt": {
+          "type": "string"
+        }
+      },
+      "required": ["email", "role"]
+    },
+    "Business": {
+      "title": "Business",
+      "description": "Represents a registered business entity and its reputation settings on GrowMore",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "The Firebase Auth UID of the business owner",
+          "maxLength": 128
+        },
+        "businessName": {
+          "type": "string",
+          "description": "Official legal or commercial business name",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "ownerName": {
+          "type": "string",
+          "description": "Full name of the business proprietor or administrator",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "email": {
+          "type": "string",
+          "description": "Primary business contact email address",
+          "format": "email",
+          "maxLength": 150
+        },
+        "phone": {
+          "type": "string",
+          "description": "Business contact phone number",
+          "maxLength": 30
+        },
+        "category": {
+          "type": "string",
+          "description": "Industry category of the business",
+          "maxLength": 60
+        },
+        "address": {
+          "type": "string",
+          "description": "Physical address or service area location",
+          "maxLength": 300
+        },
+        "website": {
+          "type": "string",
+          "description": "Public company website URL",
+          "maxLength": 300
+        },
+        "logoUrl": {
+          "type": "string",
+          "description": "Firebase Storage or secure HTTPS URL for the business logo",
+          "maxLength": 1000
+        },
+        "googleReviewUrl": {
+          "type": "string",
+          "description": "Direct URL to Google Maps / Local business review write popup",
+          "maxLength": 1000
+        },
+        "googlePlaceId": {
+          "type": "string",
+          "description": "Optional verified Google Place ID",
+          "maxLength": 128
+        },
+        "slug": {
+          "type": "string",
+          "description": "Unique URL-friendly slug used for the public review page /r/:slug",
+          "minLength": 2,
+          "maxLength": 100,
+          "pattern": "^[a-z0-9-]+$"
+        },
+        "headerColor": {
+          "type": "string",
+          "description": "Branding header accent color hex code",
+          "maxLength": 20
+        },
+        "accentColor": {
+          "type": "string",
+          "description": "Branding primary accent color hex code",
+          "maxLength": 20
+        },
+        "customHeadline": {
+          "type": "string",
+          "description": "Custom headline on the public review page",
+          "maxLength": 150
+        },
+        "customSubheadline": {
+          "type": "string",
+          "description": "Custom subheadline on the public review page",
+          "maxLength": 250
+        },
+        "thresholdRatingForGoogle": {
+          "type": "number",
+          "description": "Minimum star rating threshold (e.g. 4 or 5) to route to Google Reviews"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["active", "suspended", "trial"]
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Server creation timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Server last updated timestamp"
+        },
+        "isActive": {
+          "type": "boolean",
+          "description": "Whether the business review portal is currently active"
+        }
+      },
+      "required": [
+        "ownerId",
+        "businessName",
+        "ownerName",
+        "email",
+        "category",
+        "googleReviewUrl",
+        "slug",
+        "isActive"
+      ]
+    },
+    "Feedback": {
+      "title": "Feedback",
+      "description": "Customer feedback submission with rating and optional comments",
+      "type": "object",
+      "properties": {
+        "businessId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "ownerId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "rating": {
+          "type": "number"
+        },
+        "comment": {
+          "type": "string",
+          "maxLength": 3000
+        },
+        "customerName": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "customerEmail": {
+          "type": "string",
+          "maxLength": 150
+        },
+        "customerPhone": {
+          "type": "string",
+          "maxLength": 30
+        },
+        "source": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "googleRedirected": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "type": "string"
+        }
+      },
+      "required": ["businessId", "rating", "googleRedirected"]
+    },
+    "SystemSettings": {
+      "title": "SystemSettings",
+      "description": "Platform-wide operational and administrative configurations",
+      "type": "object",
+      "properties": {
+        "platformName": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "maintenanceMode": {
+          "type": "boolean"
+        },
+        "allowSignups": {
+          "type": "boolean"
+        },
+        "defaultTrialDays": {
+          "type": "number"
+        },
+        "googleSyncInterval": {
+          "type": "number"
+        },
+        "supportEmail": {
+          "type": "string",
+          "format": "email",
+          "maxLength": 150
+        },
+        "updatedAt": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User accounts with system authorization roles"
+    },
+    "/businesses/{businessId}": {
+      "schema": "Business",
+      "description": "Collection of businesses managed by authenticated owners"
+    },
+    "/feedback/{feedbackId}": {
+      "schema": "Feedback",
+      "description": "Feedback submitted for businesses"
+    },
+    "/system/{settingId}": {
+      "schema": "SystemSettings",
+      "description": "System-level configurations managed by administrators"
+    }
+  }
+}

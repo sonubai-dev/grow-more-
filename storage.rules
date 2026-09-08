@@ -1,0 +1,37 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isImageFile() {
+      return request.resource.contentType.matches('image/.*')
+        && request.resource.size < 5 * 1024 * 1024; // 5MB limit
+    }
+
+    // Secure owner-based access map using firestore.get
+    function isBusinessOwner(businessId) {
+      return firestore.get(/databases/(default)/documents/businesses/$(businessId)).data.ownerId == request.auth.uid;
+    }
+
+    // Business logo uploads:
+    // Path: /businesses/{businessId}/logo.{ext}
+    match /businesses/{businessId}/{fileName} {
+      // Publicly readable so public review page /r/:slug can render logo
+      allow read: if true;
+      
+      // Upload/write allowed only for authenticated owners of the specific business with valid image files
+      allow write: if isSignedIn() && isBusinessOwner(businessId) && isImageFile();
+      allow delete: if isSignedIn() && isBusinessOwner(businessId);
+    }
+
+    // Default deny for all other paths
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

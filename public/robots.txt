@@ -1,0 +1,28 @@
+# robots.txt for https://zellonai.online
+User-agent: *
+Allow: /
+Allow: /r/*
+Allow: /legal
+Allow: /legal/*
+Allow: /privacy
+Allow: /terms
+Allow: /google-guidelines
+Allow: /security-legal
+Allow: /security
+Allow: /gdpr
+
+# Disallow private user dashboards, platform administration, and authentication
+Disallow: /dashboard
+Disallow: /dashboard/
+Disallow: /dashboard/*
+Disallow: /admin
+Disallow: /admin/
+Disallow: /admin/*
+Disallow: /settings
+Disallow: /settings/*
+Disallow: /login
+Disallow: /signup
+Disallow: /forgot-password
+
+# Sitemap
+Sitemap: https://zellonai.online/sitemap.xml

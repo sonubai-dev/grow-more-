@@ -1,0 +1,225 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default Deny All
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Secure Admin Authorization Check
+    function isAdmin() {
+      return isSignedIn() && (
+        (request.auth.token.email != null && request.auth.token.email == 'admin@zellonai.online') ||
+        request.auth.token.admin == true ||
+        request.auth.token.role == 'admin' ||
+        (
+          exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+        )
+      );
+    }
+
+    function isBusinessOwner(ownerId, businessId) {
+      return isSignedIn() && (
+        request.auth.uid == ownerId ||
+        (businessId != null && exists(/databases/$(database)/documents/businesses/$(businessId)) &&
+         get(/databases/$(database)/documents/businesses/$(businessId)).data.ownerId == request.auth.uid)
+      );
+    }
+
+    function isValidBusiness(data) {
+      return data.ownerId is string && data.ownerId.size() <= 128
+        && data.businessName is string && data.businessName.size() >= 2 && data.businessName.size() <= 100
+        && data.ownerName is string && data.ownerName.size() >= 2 && data.ownerName.size() <= 100
+        && data.email is string && data.email.size() <= 150
+        && data.category is string && data.category.size() <= 60
+        && data.googleReviewUrl is string && data.googleReviewUrl.size() <= 1000
+        && data.slug is string && data.slug.size() >= 2 && data.slug.size() <= 100 && data.slug.matches('^[a-z0-9-]+$')
+        && data.isActive is bool
+        && (!('status' in data) || data.status in ['active', 'suspended', 'trial'])
+        && (!('phone' in data) || (data.phone is string && data.phone.size() <= 30))
+        && (!('address' in data) || (data.address is string && data.address.size() <= 300))
+        && (!('website' in data) || (data.website is string && data.website.size() <= 300))
+        && (!('logoUrl' in data) || (data.logoUrl is string && data.logoUrl.size() <= 1000000))
+        && (!('googlePlaceId' in data) || (data.googlePlaceId is string && data.googlePlaceId.size() <= 128));
+    }
+
+    function isValidFeedback(data) {
+      return data.businessId is string && data.businessId.size() > 0 && data.businessId.size() <= 128
+        && data.rating is number && (data.rating in [1, 2, 3, 4, 5])
+        && data.source is string && data.source.size() <= 60
+        && data.googleRedirected is bool
+        && data.createdAt == request.time
+        && (!('status' in data) || data.status == 'new')
+        && (!('comment' in data) || (data.comment is string && data.comment.size() <= 3000))
+        && (!('customerName' in data) || (data.customerName is string && data.customerName.size() <= 100))
+        && (!('customerEmail' in data) || (data.customerEmail is string && data.customerEmail.size() <= 150))
+        && (!('customerPhone' in data) || (data.customerPhone is string && data.customerPhone.size() <= 30));
+    }
+
+    function isValidClick(data) {
+      return data.businessId is string && data.businessId.size() > 0 && data.businessId.size() <= 128;
+    }
+
+    // 1. Users collection (with RBAC protection)
+    match /users/{userId} {
+      allow get: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow list: if isAdmin();
+      
+      // Self registration is restricted to 'business' role; only admins can create admin records
+      allow create: if isSignedIn() && request.auth.uid == userId && (
+        incoming().role == 'business' || isAdmin()
+      );
+
+      // Users cannot elevate their own role to 'admin'
+      allow update: if isSignedIn() && (
+        isAdmin() || (
+          request.auth.uid == userId &&
+          incoming().role == existing().role
+        )
+      );
+
+      allow delete: if isAdmin();
+    }
+
+    // 2. Businesses collection
+    match /businesses/{businessId} {
+      // Public review page can read active non-suspended businesses; Owner can read their own; Admin can read all
+      allow get: if isValidId(businessId) && (
+        isAdmin() ||
+        (isSignedIn() && resource.data.ownerId == request.auth.uid) ||
+        (resource.data.isActive == true && (!('status' in resource.data) || resource.data.status != 'suspended'))
+      );
+
+      // Secure list queries
+      allow list: if isAdmin() ||
+        (isSignedIn() && resource.data.ownerId == request.auth.uid) ||
+        (resource.data.isActive == true && (!('status' in resource.data) || resource.data.status != 'suspended'));
+
+      allow create: if isSignedIn()
+        && isValidId(businessId)
+        && isValidBusiness(incoming())
+        && (incoming().ownerId == request.auth.uid || isAdmin());
+
+      allow update: if isSignedIn()
+        && isValidId(businessId)
+        && (
+          isAdmin() ||
+          (
+            existing().ownerId == request.auth.uid
+            && incoming().ownerId == existing().ownerId
+            && isValidBusiness(incoming())
+          )
+        );
+
+      allow delete: if isSignedIn()
+        && isValidId(businessId)
+        && (existing().ownerId == request.auth.uid || isAdmin());
+    }
+
+    // 3. Feedback collection
+    match /feedback/{feedbackId} {
+      // Anyone can submit customer feedback through the public review page. Immutable once created.
+      allow create: if isValidFeedback(incoming());
+
+      // Business owners can read only their own feedback; Admins can read all feedback platform-wide
+      allow get, list: if isAdmin() || (
+        isSignedIn() && (
+          (resource.data.ownerId != '' && resource.data.ownerId == request.auth.uid) ||
+          (exists(/databases/$(database)/documents/businesses/$(resource.data.businessId)) &&
+           get(/databases/$(database)/documents/businesses/$(resource.data.businessId)).data.ownerId == request.auth.uid)
+        )
+      );
+
+      // Business owners can only update internal status/notes; Admins can moderate
+      allow update: if isAdmin() || (
+        isSignedIn() &&
+        (
+          (resource.data.ownerId != '' && resource.data.ownerId == request.auth.uid) ||
+          (exists(/databases/$(database)/documents/businesses/$(resource.data.businessId)) &&
+           get(/databases/$(database)/documents/businesses/$(resource.data.businessId)).data.ownerId == request.auth.uid)
+        ) &&
+        incoming().rating == existing().rating &&
+        incoming().comment == existing().comment &&
+        incoming().businessId == existing().businessId
+      );
+
+      allow delete: if isAdmin() || (
+        isSignedIn() && (
+          (resource.data.ownerId != '' && resource.data.ownerId == request.auth.uid) ||
+          (exists(/databases/$(database)/documents/businesses/$(resource.data.businessId)) &&
+           get(/databases/$(database)/documents/businesses/$(resource.data.businessId)).data.ownerId == request.auth.uid)
+        )
+      );
+    }
+
+    // 4. Google Review Clicks tracking collection
+    match /reviewClicks/{clickId} {
+      allow create: if isValidClick(incoming());
+
+      allow get, list: if isAdmin() || (
+        isSignedIn() && (
+          (resource.data.ownerId != '' && resource.data.ownerId == request.auth.uid) ||
+          (exists(/databases/$(database)/documents/businesses/$(resource.data.businessId)) &&
+           get(/databases/$(database)/documents/businesses/$(resource.data.businessId)).data.ownerId == request.auth.uid)
+        )
+      );
+
+      allow update: if false;
+      allow delete: if isAdmin();
+    }
+
+    // 5. Aggregated Business Statistics collection
+    match /businessStats/{businessId} {
+      allow get: if isAdmin() || (
+        isSignedIn() && (
+          (resource.data.ownerId != '' && resource.data.ownerId == request.auth.uid) ||
+          (exists(/databases/$(database)/documents/businesses/$(businessId)) &&
+           get(/databases/$(database)/documents/businesses/$(businessId)).data.ownerId == request.auth.uid)
+        )
+      ) || (
+        exists(/databases/$(database)/documents/businesses/$(businessId))
+      );
+
+      allow list: if isAdmin();
+
+      allow create, update: if isAdmin() || (
+        isSignedIn() && (
+          (incoming().ownerId != '' && incoming().ownerId == request.auth.uid) ||
+          (exists(/databases/$(database)/documents/businesses/$(businessId)) &&
+           get(/databases/$(database)/documents/businesses/$(businessId)).data.ownerId == request.auth.uid)
+        )
+      ) || (
+        incoming().totalFeedback is number &&
+        incoming().googleClicks is number
+      );
+
+      allow delete: if isAdmin();
+    }
+
+    // 6. Platform System Settings collection
+    match /system/{settingId} {
+      allow get: if true;
+      allow list, create, update, delete: if isAdmin();
+    }
+  }
+}
