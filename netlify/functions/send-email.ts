@@ -21,8 +21,8 @@ export default async (req: Request) => {
       body: JSON.stringify({
         from: payload.from || fromEmail,
         to: toRecipients,
-        subject: payload.subject || 'GrowMore Notification',
-        html: payload.html || '<p>GrowMore Notification</p>',
+        subject: payload.subject || 'ZellonAI Notification',
+        html: payload.html || '<p>ZellonAI Notification</p>',
       }),
     });
 

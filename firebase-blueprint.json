@@ -29,7 +29,7 @@
     },
     "Business": {
       "title": "Business",
-      "description": "Represents a registered business entity and its reputation settings on GrowMore",
+      "description": "Represents a registered business entity and its reputation settings on ZellonAI",
       "type": "object",
       "properties": {
         "ownerId": {

@@ -19,10 +19,10 @@ export const Navbar: React.FC = () => {
             </div>
             <div className="flex flex-col">
               <span className="text-xl font-extrabold tracking-tight text-slate-900 leading-none">
-                Grow<span className="text-indigo-600">More</span>
+                Zellon<span className="text-indigo-600">AI</span>
               </span>
               <span className="text-[10px] text-slate-600 font-semibold tracking-wider uppercase mt-0.5">
-                Google Review Growth
+                Feedback & Reviews
               </span>
             </div>
           </Link>

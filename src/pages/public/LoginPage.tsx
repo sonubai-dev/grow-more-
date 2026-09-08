@@ -82,7 +82,7 @@ export const LoginPage: React.FC = () => {
             <Sparkles className="w-5 h-5" />
           </div>
           <span className="text-2xl font-extrabold text-slate-900 tracking-tight">
-            Grow<span className="text-indigo-600">More</span>
+            Zellon<span className="text-indigo-600">AI</span>
           </span>
         </Link>
         <h2 className="mt-6 text-2xl font-extrabold text-slate-900 tracking-tight">

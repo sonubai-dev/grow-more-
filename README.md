@@ -1,6 +1,6 @@
-# GrowMore - Smart Google Reviews & Reputation Management Platform
+# ZellonAI - Smart Customer Feedback & Google Review Management Platform
 
-GrowMore is an enterprise-grade customer feedback routing and reputation management platform built for local and multi-location businesses. It intelligently channels positive customer reviews directly to Google Reviews while capturing private, constructive feedback to protect online reputation.
+ZellonAI is an enterprise-grade customer feedback routing and reputation management platform built for local and multi-location businesses. It intelligently channels positive customer reviews directly to Google Reviews while capturing private, constructive feedback to protect online reputation.
 
 ---
 
@@ -21,7 +21,7 @@ GrowMore is an enterprise-grade customer feedback routing and reputation managem
 
 ## 1. Project Overview
 
-GrowMore provides a complete review acceleration and reputation suite:
+ZellonAI provides a complete review acceleration and reputation suite:
 - **Intelligent Feedback Routing**: 5-star ratings redirect seamlessly to the business's official Google Reviews URL; constructive ratings (1-4 stars) are captured in a private feedback inbox.
 - **Tenant Management**: Multi-business management with custom slug URLs (`/r/:slug`), customizable branding, logos, threshold configurations, and SMS/Email invite templates.
 - **Analytics & Conversion Tracking**: Real-time monitoring of customer submissions, Google redirect conversions, NPS breakdown, and monthly review volume.

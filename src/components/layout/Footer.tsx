@@ -14,7 +14,7 @@ export const Footer: React.FC = () => {
                 <Sparkles className="w-4 h-4" />
               </div>
               <span className="text-xl font-bold text-white tracking-tight">
-                Grow<span className="text-indigo-400">More</span>
+                Zellon<span className="text-indigo-400">AI</span>
               </span>
             </div>
             <p className="text-xs text-slate-400 leading-relaxed">
