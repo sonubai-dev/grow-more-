@@ -124,7 +124,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isAdmin = false, onCloseMobile
       <div className="p-3 border-t border-slate-800 space-y-2">
         {/* Quick link to switch between Business and Admin */}
         <div className="px-1 py-1">
-          {isAdmin ? (
+          {isAdmin && (
             <Link
               to="/dashboard"
               className="w-full flex items-center justify-between p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 transition-colors"
@@ -132,17 +132,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isAdmin = false, onCloseMobile
               <div className="flex items-center gap-2">
                 <Building2 className="w-3.5 h-3.5 text-indigo-400" />
                 <span>Go to Business Dashboard</span>
-              </div>
-              <ChevronRight className="w-3.5 h-3.5" />
-            </Link>
-          ) : (
-            <Link
-              to="/admin"
-              className="w-full flex items-center justify-between p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 transition-colors"
-            >
-              <div className="flex items-center gap-2">
-                <Shield className="w-3.5 h-3.5 text-amber-400" />
-                <span>Platform Admin Portal</span>
               </div>
               <ChevronRight className="w-3.5 h-3.5" />
             </Link>

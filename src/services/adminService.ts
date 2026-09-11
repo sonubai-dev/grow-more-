@@ -67,7 +67,7 @@ export async function verifyUserAdminRole(userId: string): Promise<boolean> {
 
   // 1. Fast check for bootstrap admin email (0 network overhead)
   const currentEmail = auth?.currentUser?.email?.toLowerCase();
-  if (currentEmail === 'admin@zellonai.online') {
+  if (currentEmail === 'admin@zellonai.online' || currentEmail === 'ssdd747346@gmail.com') {
     return true;
   }
 
