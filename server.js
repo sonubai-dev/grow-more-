@@ -118,6 +118,46 @@ app.post('/api/razorpay/verify-subscription', async (req, res) => {
   }
 });
 
+/**
+ * Endpoint 3: Razorpay Webhook Handler
+ */
+app.post('/api/razorpay/webhook', (req, res) => {
+  try {
+    const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET || '';
+    const signature = req.headers['x-razorpay-signature'];
+
+    if (webhookSecret && signature) {
+      const shasum = crypto.createHmac('sha256', webhookSecret);
+      shasum.update(JSON.stringify(req.body));
+      const digest = shasum.digest('hex');
+
+      if (digest !== signature) {
+        console.warn('[Webhook Warning] Invalid Razorpay webhook signature');
+        return res.status(400).json({ status: 'invalid_signature' });
+      }
+    }
+
+    const event = req.body?.event;
+    const payload = req.body?.payload;
+
+    console.log(`[Razorpay Webhook Received] Event: ${event}`);
+
+    // Log key recurring events
+    if (event === 'subscription.authenticated') {
+      console.log('Subscription AutoPay mandate authorized successfully:', payload?.subscription?.entity?.id);
+    } else if (event === 'subscription.charged') {
+      console.log('Subscription monthly recurring payment charged:', payload?.payment?.entity?.id);
+    } else if (event === 'subscription.cancelled' || event === 'subscription.halted') {
+      console.log('Subscription halted or cancelled:', payload?.subscription?.entity?.id);
+    }
+
+    return res.json({ status: 'ok' });
+  } catch (err) {
+    console.error('Error handling Razorpay webhook:', err);
+    return res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 // Serve static assets from build output directory
 app.use(express.static(path.join(__dirname, 'dist'), {
   maxAge: '1d',
