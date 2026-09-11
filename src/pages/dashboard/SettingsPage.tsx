@@ -21,6 +21,7 @@ import { Modal } from '../../components/ui/Modal';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { sendNegativeReviewAlert } from '../../services/emailService';
+import { initiateRazorpayPayment } from '../../services/razorpayService';
 
 export const SettingsPage: React.FC = () => {
   const { currentBusiness } = useAuth();
@@ -97,10 +98,46 @@ export const SettingsPage: React.FC = () => {
     addToast('success', `Invitation sent to ${inviteEmail}`, 'Invite Sent');
   };
 
-  const handleSelectPlan = (plan: 'starter' | 'growth' | 'enterprise') => {
-    setCurrentPlan(plan);
+
+  const [processingPayment, setProcessingPayment] = useState(false);
+
+  const handleSelectPlan = async (plan: 'starter' | 'growth' | 'enterprise') => {
+    if (plan === currentPlan) {
+      setPlanModalOpen(false);
+      return;
+    }
+
+    const prices = {
+      starter: 99,
+      growth: 499,
+      enterprise: 1499,
+    };
+
+    setProcessingPayment(true);
     setPlanModalOpen(false);
-    addToast('success', `Plan successfully updated to ${planDetails[plan].name} (${planDetails[plan].price})!`, 'Subscription Updated');
+
+    await initiateRazorpayPayment({
+      planId: plan,
+      planName: planDetails[plan].name,
+      amountInINR: prices[plan],
+      businessId: currentBusiness?.id,
+      customerName: currentBusiness?.ownerName || '',
+      customerEmail: currentBusiness?.email || '',
+      customerPhone: currentBusiness?.phone || '',
+      onSuccess: (paymentId, orderId) => {
+        setProcessingPayment(false);
+        setCurrentPlan(plan);
+        addToast(
+          'success',
+          `Payment Successful! Transferred to ${planDetails[plan].name}. (Payment ID: ${paymentId})`,
+          'Subscription Updated'
+        );
+      },
+      onError: (errorMsg) => {
+        setProcessingPayment(false);
+        addToast('error', errorMsg, 'Payment Notice');
+      },
+    });
   };
 
   return (

@@ -49,7 +49,7 @@ service cloud.firestore {
     function isValidBusiness(data) {
       return data.ownerId is string && data.ownerId.size() <= 128
         && data.businessName is string && data.businessName.size() >= 2 && data.businessName.size() <= 100
-        && data.ownerName is string && data.ownerName.size() >= 2 && data.ownerName.size() <= 100
+        && data.ownerName is string && data.ownerName.size() >= 1 && data.ownerName.size() <= 100
         && data.email is string && data.email.size() <= 150
         && data.category is string && data.category.size() <= 60
         && data.googleReviewUrl is string && data.googleReviewUrl.size() <= 1000
@@ -60,7 +60,14 @@ service cloud.firestore {
         && (!('address' in data) || (data.address is string && data.address.size() <= 300))
         && (!('website' in data) || (data.website is string && data.website.size() <= 300))
         && (!('logoUrl' in data) || (data.logoUrl is string && data.logoUrl.size() <= 1000000))
-        && (!('googlePlaceId' in data) || (data.googlePlaceId is string && data.googlePlaceId.size() <= 128));
+        && (!('googlePlaceId' in data) || (data.googlePlaceId is string && data.googlePlaceId.size() <= 128))
+        && (!('headerColor' in data) || (data.headerColor is string && data.headerColor.size() <= 20))
+        && (!('accentColor' in data) || (data.accentColor is string && data.accentColor.size() <= 20))
+        && (!('customHeadline' in data) || (data.customHeadline is string && data.customHeadline.size() <= 300))
+        && (!('customSubheadline' in data) || (data.customSubheadline is string && data.customSubheadline.size() <= 500))
+        && (!('thresholdRatingForGoogle' in data) || (data.thresholdRatingForGoogle is number))
+        && (!('createdAt' in data) || true)
+        && (!('updatedAt' in data) || true);
     }
 
     function isValidFeedback(data) {
