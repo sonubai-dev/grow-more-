@@ -107,11 +107,11 @@ export const SettingsPage: React.FC = () => {
       return;
     }
 
-    const prices = {
-      starter: 99,
-      growth: 499,
-      enterprise: 1499,
-    };
+    if (plan === 'enterprise') {
+      addToast('info', 'Please contact our sales team to upgrade to Enterprise.', 'Contact Sales');
+      setPlanModalOpen(false);
+      return;
+    }
 
     setProcessingPayment(true);
     setPlanModalOpen(false);
@@ -119,17 +119,16 @@ export const SettingsPage: React.FC = () => {
     await initiateRazorpayPayment({
       planId: plan,
       planName: planDetails[plan].name,
-      amountInINR: prices[plan],
       businessId: currentBusiness?.id,
       customerName: currentBusiness?.ownerName || '',
       customerEmail: currentBusiness?.email || '',
       customerPhone: currentBusiness?.phone || '',
-      onSuccess: (paymentId, orderId) => {
+      onSuccess: (paymentId, subscriptionId) => {
         setProcessingPayment(false);
         setCurrentPlan(plan);
         addToast(
           'success',
-          `Payment Successful! Transferred to ${planDetails[plan].name}. (Payment ID: ${paymentId})`,
+          `Subscription setup complete with 14-day Free Trial! (Sub ID: ${subscriptionId})`,
           'Subscription Updated'
         );
       },
@@ -337,8 +336,8 @@ export const SettingsPage: React.FC = () => {
             {
               id: 'enterprise' as const,
               name: 'Enterprise',
-              price: '₹1,499',
-              desc: 'Unlimited Locations, multi-tenant portal, webhooks & priority SLA.',
+              price: 'Custom',
+              desc: 'Unlimited Locations, multi-tenant portal, webhooks & priority SLA. Contact Sales.',
             },
           ].map((plan) => {
             const isSelected = currentPlan === plan.id;

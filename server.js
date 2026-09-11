@@ -15,55 +15,63 @@ app.use(express.json());
 const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID || process.env.VITE_RAZORPAY_KEY_ID || '';
 const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || '';
 
-/**
- * Endpoint 1: Create Razorpay Order
- */
-app.post('/api/razorpay/create-order', async (req, res) => {
-  try {
-    const { amount, currency = 'INR', plan, businessId } = req.body;
+// Hardcoded Plan IDs provided by user
+const RAZORPAY_PLANS = {
+  starter: 'plan_TZTMkUGhuBUCYl',
+  growth: 'plan_TZTNpjDON3uJXQ',
+};
 
-    if (!amount || isNaN(amount)) {
-      return res.status(400).json({ error: 'Valid amount in paise is required.' });
+/**
+ * Endpoint 1: Create Razorpay Subscription (with Trial Period)
+ */
+app.post('/api/razorpay/create-subscription', async (req, res) => {
+  try {
+    const { plan, businessId } = req.body;
+
+    if (!plan || !RAZORPAY_PLANS[plan]) {
+      return res.status(400).json({ error: 'Valid plan (starter or growth) is required.' });
     }
 
     if (!RAZORPAY_KEY_ID || !RAZORPAY_KEY_SECRET) {
-      console.warn('[Razorpay API Warning] RAZORPAY_KEY_ID or RAZORPAY_KEY_SECRET missing in environment variables.');
-      // Return dummy order ID for testing if keys not provided in dev
-      const mockOrderId = `order_mock_${Date.now()}`;
+      console.warn('[Razorpay API Warning] Keys missing. Using mock response.');
       return res.json({
-        id: mockOrderId,
-        entity: 'order',
-        amount: Number(amount),
-        currency: currency || 'INR',
-        receipt: `receipt_${Date.now()}`,
+        id: `sub_mock_${Date.now()}`,
+        entity: 'subscription',
         status: 'created',
         keyId: RAZORPAY_KEY_ID || 'rzp_test_mockKey123',
       });
     }
 
-    // Auth header for Razorpay API (Basic Auth using key_id:key_secret)
+    // 14 days free trial -> AutoPay starts after 14 days
+    const trialDays = 14;
+    // Calculate start_at in UNIX timestamp (must be at least 24h in the future)
+    const startAt = Math.floor(Date.now() / 1000) + (trialDays * 24 * 60 * 60);
+
     const authString = Buffer.from(`${RAZORPAY_KEY_ID}:${RAZORPAY_KEY_SECRET}`).toString('base64');
 
-    const response = await fetch('https://api.razorpay.com/v1/orders', {
+    const response = await fetch('https://api.razorpay.com/v1/subscriptions', {
       method: 'POST',
       headers: {
         'Authorization': `Basic ${authString}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        amount: Number(amount), // in paise (e.g. ₹499 = 49900)
-        currency: currency || 'INR',
-        receipt: `rcpt_${businessId || 'biz'}_${Date.now().toString().slice(-6)}`,
+        plan_id: RAZORPAY_PLANS[plan],
+        total_count: 120, // max 10 years
+        quantity: 1,
+        start_at: startAt, // Starts after trial period
+        customer_notify: 1,
         notes: {
-          plan: plan || 'starter',
           businessId: businessId || '',
+          plan: plan,
         },
       }),
     });
 
     const data = await response.json();
     if (!response.ok) {
-      return res.status(response.status).json({ error: data.error?.description || 'Razorpay order creation failed.' });
+      console.error('Razorpay subscription error:', data);
+      return res.status(response.status).json({ error: data.error?.description || 'Subscription creation failed.' });
     }
 
     return res.json({
@@ -71,41 +79,42 @@ app.post('/api/razorpay/create-order', async (req, res) => {
       keyId: RAZORPAY_KEY_ID,
     });
   } catch (err) {
-    console.error('Error creating Razorpay order:', err);
-    return res.status(500).json({ error: 'Internal Server Error while creating payment order.' });
+    console.error('Error creating Razorpay subscription:', err);
+    return res.status(500).json({ error: 'Internal Server Error while creating subscription.' });
   }
 });
 
 /**
- * Endpoint 2: Verify Razorpay Payment Signature
+ * Endpoint 2: Verify Razorpay Subscription Signature
  */
-app.post('/api/razorpay/verify-payment', async (req, res) => {
+app.post('/api/razorpay/verify-subscription', async (req, res) => {
   try {
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+    const { razorpay_subscription_id, razorpay_payment_id, razorpay_signature } = req.body;
 
-    if (!razorpay_order_id || !razorpay_payment_id) {
-      return res.status(400).json({ error: 'Missing payment details.' });
+    if (!razorpay_subscription_id || !razorpay_payment_id || !razorpay_signature) {
+      return res.status(400).json({ error: 'Missing subscription or payment details.' });
     }
 
-    // Mock bypass if secret key not set in local demo environment
     if (!RAZORPAY_KEY_SECRET) {
-      return res.json({ success: true, message: 'Payment verified (Demo mode).' });
+      return res.json({ success: true, message: 'Verified (Demo mode).' });
     }
 
-    // Verify HMAC SHA256 signature
+    // Razorpay Subscription verification needs: payment_id + "|" + subscription_id
+    const payload = `${razorpay_payment_id}|${razorpay_subscription_id}`;
+    
     const generatedSignature = crypto
       .createHmac('sha256', RAZORPAY_KEY_SECRET)
-      .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+      .update(payload)
       .digest('hex');
 
     if (generatedSignature === razorpay_signature) {
-      return res.json({ success: true, message: 'Razorpay payment verified successfully.' });
+      return res.json({ success: true, message: 'Subscription verified successfully.' });
     } else {
-      return res.status(400).json({ success: false, error: 'Invalid payment signature. Potential tampering detected.' });
+      return res.status(400).json({ success: false, error: 'Invalid signature.' });
     }
   } catch (err) {
-    console.error('Error verifying Razorpay payment:', err);
-    return res.status(500).json({ error: 'Internal Server Error while verifying payment.' });
+    console.error('Error verifying Razorpay subscription:', err);
+    return res.status(500).json({ error: 'Internal Server Error while verifying subscription.' });
   }
 });
 

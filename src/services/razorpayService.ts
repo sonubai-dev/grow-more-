@@ -17,11 +17,9 @@ export function loadRazorpayScript(): Promise<boolean> {
 
 export interface RazorpayOptions {
   key: string;
-  amount: number;
-  currency: string;
+  subscription_id: string; // Used for subscriptions instead of order_id
   name: string;
   description: string;
-  order_id: string;
   prefill?: {
     name?: string;
     email?: string;
@@ -33,7 +31,7 @@ export interface RazorpayOptions {
   };
   handler: (response: {
     razorpay_payment_id: string;
-    razorpay_order_id: string;
+    razorpay_subscription_id: string;
     razorpay_signature: string;
   }) => void;
   modal?: {
@@ -44,17 +42,16 @@ export interface RazorpayOptions {
 export interface InitiatePaymentParams {
   planId: 'starter' | 'growth' | 'enterprise';
   planName: string;
-  amountInINR: number;
   businessId?: string;
   customerName?: string;
   customerEmail?: string;
   customerPhone?: string;
-  onSuccess: (paymentId: string, orderId: string) => void;
+  onSuccess: (paymentId: string, subscriptionId: string) => void;
   onError: (errorMsg: string) => void;
 }
 
 /**
- * Initiates Razorpay payment checkout modal
+ * Initiates Razorpay subscription checkout modal for UPI AutoPay
  */
 export async function initiateRazorpayPayment(params: InitiatePaymentParams): Promise<void> {
   const isLoaded = await loadRazorpayScript();
@@ -64,15 +61,13 @@ export async function initiateRazorpayPayment(params: InitiatePaymentParams): Pr
   }
 
   try {
-    // 1. Create order on backend API
-    const response = await fetch('/api/razorpay/create-order', {
+    // 1. Create subscription on backend API
+    const response = await fetch('/api/razorpay/create-subscription', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        amount: params.amountInINR * 100, // Amount in paise
-        currency: 'INR',
         plan: params.planId,
         businessId: params.businessId || 'default_biz',
       }),
@@ -80,24 +75,22 @@ export async function initiateRazorpayPayment(params: InitiatePaymentParams): Pr
 
     if (!response.ok) {
       const errData = await response.json().catch(() => ({}));
-      throw new Error(errData.error || 'Failed to create payment order.');
+      throw new Error(errData.error || 'Failed to create subscription.');
     }
 
-    const orderData = await response.json();
-    const razorpayKey = orderData.keyId || (import.meta as any).env?.VITE_RAZORPAY_KEY_ID || '';
+    const subData = await response.json();
+    const razorpayKey = subData.keyId || (import.meta as any).env?.VITE_RAZORPAY_KEY_ID || '';
 
     if (!razorpayKey) {
-      throw new Error('Razorpay Key ID is missing. Please configure VITE_RAZORPAY_KEY_ID in environment variables.');
+      throw new Error('Razorpay Key ID is missing. Please configure VITE_RAZORPAY_KEY_ID.');
     }
 
-    // 2. Open Razorpay Checkout Modal
+    // 2. Open Razorpay Checkout Modal for Subscriptions
     const options: RazorpayOptions = {
       key: razorpayKey,
-      amount: orderData.amount,
-      currency: orderData.currency || 'INR',
+      subscription_id: subData.id,
       name: 'ZellonAI',
-      description: `Subscription: ${params.planName}`,
-      order_id: orderData.id,
+      description: `Subscription: ${params.planName} (14-Day Free Trial)`,
       prefill: {
         name: params.customerName || '',
         email: params.customerEmail || '',
@@ -112,15 +105,15 @@ export async function initiateRazorpayPayment(params: InitiatePaymentParams): Pr
       },
       handler: async (paymentResponse) => {
         try {
-          // 3. Verify payment signature on backend
-          const verifyRes = await fetch('/api/razorpay/verify-payment', {
+          // 3. Verify subscription signature on backend
+          const verifyRes = await fetch('/api/razorpay/verify-subscription', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
               razorpay_payment_id: paymentResponse.razorpay_payment_id,
-              razorpay_order_id: paymentResponse.razorpay_order_id,
+              razorpay_subscription_id: paymentResponse.razorpay_subscription_id,
               razorpay_signature: paymentResponse.razorpay_signature,
               businessId: params.businessId,
               plan: params.planId,
@@ -129,12 +122,12 @@ export async function initiateRazorpayPayment(params: InitiatePaymentParams): Pr
 
           const verifyData = await verifyRes.json();
           if (verifyRes.ok && verifyData.success) {
-            params.onSuccess(paymentResponse.razorpay_payment_id, paymentResponse.razorpay_order_id);
+            params.onSuccess(paymentResponse.razorpay_payment_id, paymentResponse.razorpay_subscription_id);
           } else {
-            params.onError(verifyData.error || 'Payment signature verification failed.');
+            params.onError(verifyData.error || 'Subscription verification failed.');
           }
         } catch (err: any) {
-          params.onError(err.message || 'Error verifying payment signature.');
+          params.onError(err.message || 'Error verifying subscription.');
         }
       },
       modal: {
