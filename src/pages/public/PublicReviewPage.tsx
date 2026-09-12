@@ -194,6 +194,22 @@ export const PublicReviewPage: React.FC = () => {
         googleRedirected: false,
       });
 
+      // Send negative review alert email if rating <= 3 and business email is available
+      if (rating <= 3 && business.email) {
+        import('../../services/emailService').then(({ sendNegativeReviewAlert }) => {
+          sendNegativeReviewAlert({
+            to: business.email!,
+            businessName: business.name || 'Your Business',
+            customerName: customerName.trim(),
+            customerEmail: customerEmail.trim(),
+            customerPhone: customerPhone.trim(),
+            rating: rating as FeedbackRating,
+            comment: comment.trim(),
+            businessId: business.id,
+          }).catch(console.warn);
+        });
+      }
+
       setSubmitted1to4(true);
       try {
         sessionStorage.setItem(`zellonai_submitted_${business.id}`, 'true');

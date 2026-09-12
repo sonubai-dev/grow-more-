@@ -158,6 +158,54 @@ app.post('/api/razorpay/webhook', (req, res) => {
   }
 });
 
+/**
+ * Endpoint 4: Resend Email Proxy
+ */
+app.post('/api/send-email', async (req, res) => {
+  try {
+    const { to, subject, html, from } = req.body;
+    const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
+    
+    // Default to the domain verified in Resend, or fallback to the env var
+    const fromEmail = from || process.env.RESEND_FROM_EMAIL || 'ZellonAI <hello@zellonai.online>';
+
+    if (!RESEND_API_KEY) {
+      console.warn('[Email Proxy] RESEND_API_KEY missing. Cannot send email.');
+      return res.status(500).json({ error: 'Email service not configured.' });
+    }
+
+    if (!to || !subject || !html) {
+      return res.status(400).json({ error: 'Missing required email fields (to, subject, html).' });
+    }
+
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${RESEND_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        from: fromEmail,
+        to: Array.isArray(to) ? to : [to],
+        subject: subject,
+        html: html
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error('[Email Proxy] Resend API Error:', data);
+      return res.status(response.status).json({ error: data.message || 'Failed to send email.' });
+    }
+
+    return res.json({ success: true, id: data.id });
+  } catch (err) {
+    console.error('[Email Proxy] Internal error:', err);
+    return res.status(500).json({ error: 'Internal Server Error while sending email.' });
+  }
+});
+
 // Serve static assets from build output directory
 app.use(express.static(path.join(__dirname, 'dist'), {
   maxAge: '1d',

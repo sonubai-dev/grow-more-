@@ -296,3 +296,150 @@ export async function sendMarketingUpdate(params: MarketingUpdateParams): Promis
     html,
   });
 }
+
+export interface SubscriptionSuccessParams {
+  to: string;
+  ownerName: string;
+  planName: string;
+  amount: string;
+}
+
+/**
+ * Sends a confirmation email when a user successfully subscribes to a plan
+ */
+export async function sendSubscriptionSuccessEmail(params: SubscriptionSuccessParams): Promise<{ success: boolean; id?: string; error?: string }> {
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 0; color: #1e293b; }
+          .container { max-width: 600px; margin: 30px auto; background: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; }
+          .header { background: #10b981; padding: 32px 24px; text-align: center; }
+          .header h1 { color: #ffffff; margin: 0; font-size: 22px; font-weight: 800; }
+          .body { padding: 32px 28px; }
+          .greeting { font-size: 18px; font-weight: 700; color: #0f172a; margin-bottom: 16px; }
+          .message { font-size: 15px; line-height: 1.6; color: #334155; margin-bottom: 24px; }
+          .summary-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; margin-bottom: 24px; }
+          .detail-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e2e8f0; }
+          .detail-row:last-child { border-bottom: none; }
+          .detail-label { color: #64748b; font-weight: 600; font-size: 14px; }
+          .detail-value { color: #0f172a; font-weight: 700; font-size: 14px; }
+          .footer { background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 18px; text-align: center; font-size: 12px; color: #94a3b8; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>🎉 Subscription Confirmed!</h1>
+          </div>
+          <div class="body">
+            <div class="greeting">Hi ${params.ownerName || 'there'},</div>
+            <div class="message">
+              Thank you for subscribing to ZellonAI! Your account has been successfully upgraded. You can now access all the premium features included in your plan.
+            </div>
+            
+            <div class="summary-box">
+              <div class="detail-row">
+                <span class="detail-label">Plan Name:</span>
+                <span class="detail-value">${params.planName}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Billing Amount:</span>
+                <span class="detail-value">${params.amount} / month</span>
+              </div>
+            </div>
+            <div class="message">
+              If you have any questions, simply reply to this email. We're here to help you grow!
+            </div>
+          </div>
+          <div class="footer">
+            &copy; ${new Date().getFullYear()} ZellonAI.
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+
+  return sendEmail({
+    to: params.to,
+    subject: `🎉 Upgrade Successful - Welcome to ${params.planName}!`,
+    html,
+  });
+}
+
+export interface EnterpriseLeadParams {
+  adminEmail: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  businessName: string;
+  message?: string;
+}
+
+/**
+ * Sends a lead notification to the admin when someone requests the Enterprise plan
+ */
+export async function sendEnterpriseLeadEmail(params: EnterpriseLeadParams): Promise<{ success: boolean; id?: string; error?: string }> {
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 0; color: #1e293b; }
+          .container { max-width: 600px; margin: 30px auto; background: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; }
+          .header { background: #4f46e5; padding: 24px; text-align: center; }
+          .header h1 { color: #ffffff; margin: 0; font-size: 20px; font-weight: 800; }
+          .body { padding: 32px 28px; }
+          .summary-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; margin-bottom: 24px; }
+          .detail-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e2e8f0; }
+          .detail-row:last-child { border-bottom: none; }
+          .detail-label { color: #64748b; font-weight: 600; font-size: 14px; }
+          .detail-value { color: #0f172a; font-weight: 700; font-size: 14px; text-align: right; max-width: 60%; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>🏢 New Enterprise Lead!</h1>
+          </div>
+          <div class="body">
+            <p>Someone just filled out the Enterprise Plan request form.</p>
+            <div class="summary-box">
+              <div class="detail-row">
+                <span class="detail-label">Name:</span>
+                <span class="detail-value">${params.customerName}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Email:</span>
+                <span class="detail-value"><a href="mailto:${params.customerEmail}">${params.customerEmail}</a></span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Phone:</span>
+                <span class="detail-value">${params.customerPhone || 'N/A'}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Business:</span>
+                <span class="detail-value">${params.businessName}</span>
+              </div>
+            </div>
+            ${params.message ? `
+            <p><strong>Message:</strong></p>
+            <div style="background: #f1f5f9; padding: 16px; border-radius: 8px; font-style: italic;">
+              ${params.message}
+            </div>
+            ` : ''}
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+
+  return sendEmail({
+    to: params.adminEmail, // Admin email
+    subject: `🏢 Enterprise Request: ${params.businessName}`,
+    html,
+  });
+}

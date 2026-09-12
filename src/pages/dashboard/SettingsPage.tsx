@@ -20,7 +20,7 @@ import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
-import { sendNegativeReviewAlert } from '../../services/emailService';
+import { sendNegativeReviewAlert, sendSubscriptionSuccessEmail, sendEnterpriseLeadEmail } from '../../services/emailService';
 import { initiateRazorpayPayment } from '../../services/razorpayService';
 
 export const SettingsPage: React.FC = () => {
@@ -100,6 +100,9 @@ export const SettingsPage: React.FC = () => {
 
 
   const [processingPayment, setProcessingPayment] = useState(false);
+  const [enterpriseModalOpen, setEnterpriseModalOpen] = useState(false);
+  const [enterpriseMessage, setEnterpriseMessage] = useState('');
+  const [sendingEnterprise, setSendingEnterprise] = useState(false);
 
   const handleSelectPlan = async (plan: 'starter' | 'growth' | 'enterprise') => {
     if (plan === currentPlan) {
@@ -108,8 +111,8 @@ export const SettingsPage: React.FC = () => {
     }
 
     if (plan === 'enterprise') {
-      addToast('info', 'Please contact our sales team to upgrade to Enterprise.', 'Contact Sales');
       setPlanModalOpen(false);
+      setEnterpriseModalOpen(true);
       return;
     }
 
@@ -131,12 +134,34 @@ export const SettingsPage: React.FC = () => {
           `Subscription setup complete with 14-day Free Trial! (Sub ID: ${subscriptionId})`,
           'Subscription Updated'
         );
+        sendSubscriptionSuccessEmail({
+          to: currentBusiness?.email || '',
+          ownerName: currentBusiness?.ownerName || '',
+          planName: planDetails[plan].name,
+          amount: plan === 'starter' ? '₹99' : '₹499',
+        }).catch(console.warn);
       },
       onError: (errorMsg) => {
         setProcessingPayment(false);
         addToast('error', errorMsg, 'Payment Notice');
       },
     });
+  };
+
+  const handleEnterpriseSubmit = async () => {
+    setSendingEnterprise(true);
+    await sendEnterpriseLeadEmail({
+      adminEmail: 'ssdd747346@gmail.com',
+      customerName: currentBusiness?.ownerName || 'Unknown Owner',
+      customerEmail: currentBusiness?.email || 'No email',
+      customerPhone: currentBusiness?.phone || 'No phone',
+      businessName: currentBusiness?.name || 'Unknown Business',
+      message: enterpriseMessage,
+    });
+    setSendingEnterprise(false);
+    setEnterpriseModalOpen(false);
+    setEnterpriseMessage('');
+    addToast('success', 'Your request has been sent! Our team will contact you shortly.', 'Request Sent');
   };
 
   return (
@@ -376,6 +401,38 @@ export const SettingsPage: React.FC = () => {
           </div>
         </div>
       </Modal>
+
+      {/* Enterprise Lead Modal */}
+      <Modal
+        isOpen={enterpriseModalOpen}
+        onClose={() => setEnterpriseModalOpen(false)}
+        title="Upgrade to Enterprise"
+        description="Our team will reach out to set up your custom multi-tenant solution."
+      >
+        <div className="space-y-4 pt-2">
+          <div>
+            <label className="text-sm font-medium text-slate-700 block mb-1.5">
+              Any specific requirements? (Optional)
+            </label>
+            <textarea
+              className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none"
+              rows={4}
+              placeholder="Tell us about your locations, expected volume, or feature needs..."
+              value={enterpriseMessage}
+              onChange={(e) => setEnterpriseMessage(e.target.value)}
+            />
+          </div>
+          <div className="pt-3 flex justify-end gap-3">
+            <Button variant="outline" size="sm" onClick={() => setEnterpriseModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button size="sm" onClick={handleEnterpriseSubmit} disabled={sendingEnterprise}>
+              {sendingEnterprise ? 'Sending...' : 'Send Request'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
 
       {/* Invite Member Modal */}
       <Modal
