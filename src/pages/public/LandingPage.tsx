@@ -31,9 +31,53 @@ export const LandingPage: React.FC = () => {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
   useEffect(() => {
-    document.title = 'ZellonAI — Customer Feedback & Google Review Management';
+    document.title = 'ZellonAI — AI-Powered Customer Feedback & Google Review Management';
+    const desc = 'Grow your local business with ZellonAI. Automatically route happy 5-star customers to Google Reviews while capturing negative feedback privately.';
+    
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) metaDesc.setAttribute('content', desc);
+    
     const canonicalLink = document.querySelector('link[rel="canonical"]');
     if (canonicalLink) canonicalLink.setAttribute('href', 'https://zellonai.online');
+    
+    // Inject SoftwareApplication / Organization Schema
+    let schemaScript = document.getElementById('seo-zellonai-schema');
+    if (!schemaScript) {
+      schemaScript = document.createElement('script');
+      schemaScript.id = 'seo-zellonai-schema';
+      schemaScript.setAttribute('type', 'application/ld+json');
+      document.head.appendChild(schemaScript);
+    }
+    
+    const schemaData = {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "SoftwareApplication",
+          "name": "ZellonAI",
+          "applicationCategory": "BusinessApplication",
+          "operatingSystem": "Web",
+          "url": "https://zellonai.online",
+          "description": desc,
+          "offers": {
+            "@type": "Offer",
+            "price": "99.00",
+            "priceCurrency": "INR"
+          }
+        },
+        {
+          "@type": "Organization",
+          "name": "ZellonAI",
+          "url": "https://zellonai.online",
+          "logo": "https://zellonai.online/logo.png"
+        }
+      ]
+    };
+    schemaScript.textContent = JSON.stringify(schemaData);
+    
+    return () => {
+      if (schemaScript) schemaScript.remove();
+    };
   }, []);
 
   const faqs = [

@@ -120,8 +120,9 @@ export const PublicReviewPage: React.FC = () => {
 
     if (business) {
       const name = business.businessName || business.name || 'Verified Business';
-      const pageTitle = `ZellonAI Review — ${name}`;
-      const pageDesc = `Share your verified customer feedback and review experience for ${name} on ZellonAI.`;
+      const address = business.address ? ` | ${business.address}` : '';
+      const pageTitle = `${name} Reviews & Customer Feedback${address}`;
+      const pageDesc = `Read genuine customer feedback and share your experience with ${name}.`;
       const canonicalUrl = `https://zellonai.online/r/${business.slug}`;
 
       document.title = pageTitle;
@@ -141,10 +142,49 @@ export const PublicReviewPage: React.FC = () => {
 
       const ogUrl = document.querySelector('meta[property="og:url"]');
       if (ogUrl) ogUrl.setAttribute('content', canonicalUrl);
-    } else if (notFound) {
-      document.title = 'Business Not Found — ZellonAI';
-    } else if (invalidLink) {
-      document.title = 'Invalid Review Link — ZellonAI';
+      
+      // JSON-LD Schema for LocalBusiness
+      let schemaScript = document.getElementById('seo-business-schema');
+      if (!schemaScript) {
+        schemaScript = document.createElement('script');
+        schemaScript.id = 'seo-business-schema';
+        schemaScript.setAttribute('type', 'application/ld+json');
+        document.head.appendChild(schemaScript);
+      }
+      
+      const schemaData = {
+        "@context": "https://schema.org",
+        "@type": business.category || "LocalBusiness",
+        "name": name,
+        "url": canonicalUrl,
+        ...(business.logoUrl ? { "image": business.logoUrl } : {}),
+        ...(business.address ? { "address": business.address } : {}),
+        ...(business.website ? { "sameAs": business.website } : {})
+      };
+      
+      schemaScript.textContent = JSON.stringify(schemaData);
+      
+      // AEO/GEO Quality Rule: If business lacks meaningful public information (no address, no website), noindex to avoid thin content penalties
+      if (!business.address && !business.website) {
+        let noindexMeta = document.getElementById('seo-noindex');
+        if (!noindexMeta) {
+          noindexMeta = document.createElement('meta');
+          noindexMeta.id = 'seo-noindex';
+          noindexMeta.setAttribute('name', 'robots');
+          noindexMeta.setAttribute('content', 'noindex, follow');
+          document.head.appendChild(noindexMeta);
+        }
+      }
+    } else if (notFound || invalidLink) {
+      document.title = notFound ? 'Business Not Found — ZellonAI' : 'Invalid Review Link — ZellonAI';
+      let noindexMeta = document.getElementById('seo-noindex');
+      if (!noindexMeta) {
+        noindexMeta = document.createElement('meta');
+        noindexMeta.id = 'seo-noindex';
+        noindexMeta.setAttribute('name', 'robots');
+        noindexMeta.setAttribute('content', 'noindex, follow');
+        document.head.appendChild(noindexMeta);
+      }
     }
 
     return () => {
@@ -152,6 +192,12 @@ export const PublicReviewPage: React.FC = () => {
       if (canonicalLink) canonicalLink.setAttribute('href', 'https://zellonai.online');
       const metaDesc = document.querySelector('meta[name="description"]');
       if (metaDesc) metaDesc.setAttribute('content', defaultDesc);
+      
+      const schemaScript = document.getElementById('seo-business-schema');
+      if (schemaScript) schemaScript.remove();
+      
+      const noindexMeta = document.getElementById('seo-noindex');
+      if (noindexMeta) noindexMeta.remove();
     };
   }, [business, notFound, invalidLink]);
 
@@ -845,6 +891,52 @@ export const PublicReviewPage: React.FC = () => {
             )}
           </div>
         </Card>
+      </div>
+
+      {/* AEO / GEO Semantic Business Information (Visible to Users & Search Engines) */}
+      <div className="w-full max-w-lg mx-auto mt-6 mb-4">
+        <section className="bg-white/60 backdrop-blur-sm rounded-3xl p-6 border border-slate-200/60 shadow-sm text-sm">
+          <h2 className="text-lg font-bold text-slate-800 mb-4 border-b border-slate-200 pb-2">
+            About {businessDisplayName}
+          </h2>
+          <div className="space-y-4 text-slate-600">
+            {business.category && (
+              <div>
+                <h3 className="font-semibold text-slate-800 inline">Business Category: </h3>
+                <span>{business.category}</span>
+              </div>
+            )}
+            
+            {business.address && (
+              <div>
+                <h3 className="font-semibold text-slate-800">Where is {businessDisplayName} located?</h3>
+                <p className="mt-1 leading-relaxed">{business.address}</p>
+              </div>
+            )}
+            
+            {business.website && (
+              <div>
+                <h3 className="font-semibold text-slate-800">Official Website:</h3>
+                <a 
+                  href={business.website} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="text-indigo-600 hover:underline mt-1 inline-block"
+                >
+                  Visit {businessDisplayName}
+                </a>
+              </div>
+            )}
+
+            <div>
+              <h3 className="font-semibold text-slate-800">How can customers share feedback?</h3>
+              <p className="mt-1 leading-relaxed">
+                Customers can share their experience, provide ratings, and write reviews for <strong>{businessDisplayName}</strong> directly through this official verified feedback portal. 
+                {isGoogleEligible ? ' Positive experiences may be redirected to Google Reviews to help others discover this business.' : ''}
+              </p>
+            </div>
+          </div>
+        </section>
       </div>
 
       {/* Footer */}
