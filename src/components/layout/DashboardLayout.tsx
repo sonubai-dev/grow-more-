@@ -32,7 +32,7 @@ export const DashboardLayout: React.FC = () => {
 
   const publicReviewUrl = currentBusiness
     ? `${window.location.origin}/r/${currentBusiness.slug}`
-    : `${window.location.origin}/r/apex-dental`;
+    : `${window.location.origin}/r/solita-solutions`;
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(publicReviewUrl);
@@ -110,7 +110,7 @@ export const DashboardLayout: React.FC = () => {
           <div className="flex items-center gap-3">
             <div className="hidden lg:flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-600">
               <span className="font-semibold text-slate-400">Review URL:</span>
-              <span className="font-mono text-indigo-600 truncate max-w-[180px]">/r/{currentBusiness?.slug || 'apex-dental'}</span>
+              <span className="font-mono text-indigo-600 truncate max-w-[180px]">/r/{currentBusiness?.slug || 'solita-solutions'}</span>
               <button
                 id="copy-review-url-btn"
                 onClick={handleCopyLink}
@@ -122,7 +122,7 @@ export const DashboardLayout: React.FC = () => {
             </div>
 
             <Link
-              to={`/r/${currentBusiness?.slug || 'apex-dental'}`}
+              to={`/r/${currentBusiness?.slug || 'solita-solutions'}`}
               target="_blank"
               rel="noopener noreferrer"
               id="preview-review-page-btn"

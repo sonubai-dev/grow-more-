@@ -47,10 +47,10 @@ export const AnalyticsPage: React.FC = () => {
   const { currentBusiness, user } = useAuth();
   const { addToast } = useToast();
 
-  const businessId = currentBusiness?.id || 'apex-dental';
+  const businessId = currentBusiness?.id || 'solita-solutions';
   const ownerId = currentBusiness?.ownerId || '';
-  const businessName = currentBusiness?.businessName || currentBusiness?.name || 'Apex Dental Care';
-  const businessSlug = currentBusiness?.slug || 'apex-dental';
+  const businessName = currentBusiness?.businessName || currentBusiness?.name || 'Solita Solutions';
+  const businessSlug = currentBusiness?.slug || 'solita-solutions';
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);

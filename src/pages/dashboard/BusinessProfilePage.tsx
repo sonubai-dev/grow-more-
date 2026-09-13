@@ -146,7 +146,7 @@ export const BusinessProfilePage: React.FC = () => {
 
   const publicReviewUrl = currentBusiness
     ? `${window.location.origin}/r/${currentBusiness.slug}`
-    : `${window.location.origin}/r/apex-dental`;
+    : `${window.location.origin}/r/solita-solutions`;
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(publicReviewUrl);

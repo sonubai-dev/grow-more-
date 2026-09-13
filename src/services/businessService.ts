@@ -12,6 +12,7 @@ import {
 } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
 import { Business, FirestoreBusinessData } from '../types';
+import { MOCK_BUSINESSES } from '../data/mockData';
 import {
   AppError,
   toAppError,
@@ -389,6 +390,14 @@ export async function getBusinessBySlug(slug: string): Promise<PublicBusinessPro
       }
     }
   } catch {}
+
+  // Check mock businesses fallback for demo profiles (e.g. solita-solutions, apex-dental)
+  const mockMatch = MOCK_BUSINESSES.find(b => b.slug === cleanSlug || b.id === cleanSlug);
+  if (mockMatch) {
+    const profile = toPublicBusinessProfile(mockMatch);
+    publicSlugCache.set(cleanSlug, { profile, expiresAt: Date.now() + 60_000 });
+    return profile;
+  }
 
   return null;
 }

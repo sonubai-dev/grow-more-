@@ -37,7 +37,7 @@ export const Footer: React.FC = () => {
               <li><a href="#features" className="hover:text-white transition-colors">Core Features</a></li>
               <li><a href="#how-it-works" className="hover:text-white transition-colors">How It Works</a></li>
               <li><a href="#pricing" className="hover:text-white transition-colors">Pricing Plans</a></li>
-              <li><Link to="/r/apex-dental" className="hover:text-white transition-colors text-amber-400 flex items-center gap-1"><Star className="w-3 h-3 fill-amber-400" /> Sample Review Page</Link></li>
+              <li><Link to="/r/solita-solutions" className="hover:text-white transition-colors text-amber-400 flex items-center gap-1"><Star className="w-3 h-3 fill-amber-400" /> Sample Review Page</Link></li>
             </ul>
           </div>
 
@@ -85,7 +85,7 @@ export const Footer: React.FC = () => {
         <div className="mt-12 pt-8 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-4">
           <p>© {new Date().getFullYear()} ZellonAI SaaS Platform. All rights reserved.</p>
           <p className="flex items-center gap-2">
-            <span>Designed for high-converting customer feedback loops</span>
+            <span>Built by <strong className="text-slate-400">Solita Solutions</strong> • Designed for high-converting customer feedback loops</span>
           </p>
         </div>
       </div>

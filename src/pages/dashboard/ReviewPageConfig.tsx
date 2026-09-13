@@ -49,7 +49,7 @@ export const ReviewPageConfig: React.FC = () => {
   const [previewMode, setPreviewMode] = useState<'funnel' | 'google_reviews'>('funnel');
   const [isSaving, setIsSaving] = useState(false);
 
-  const slug = currentBusiness?.slug || 'apex-dental';
+  const slug = currentBusiness?.slug || 'solita-solutions';
   const publicUrl = `${window.location.origin}/r/${slug}`;
 
   const handleSave = async (e: React.FormEvent) => {

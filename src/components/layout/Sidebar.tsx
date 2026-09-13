@@ -42,7 +42,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isAdmin = false, onCloseMobile
 
   const navItems = isAdmin ? adminNavItems : businessNavItems;
 
-  const publicReviewUrl = currentBusiness ? `/r/${currentBusiness.slug}` : '/r/apex-dental';
+  const publicReviewUrl = currentBusiness ? `/r/${currentBusiness.slug}` : '/r/solita-solutions';
 
   return (
     <aside id="app-sidebar" className="w-64 bg-slate-900 text-slate-300 flex flex-col h-full shrink-0 select-none border-r border-slate-800">
