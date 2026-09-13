@@ -72,18 +72,17 @@ export const PublicReviewPage: React.FC = () => {
         return;
       }
 
-      // Check for malformed slug
-      if (!/^[a-zA-Z0-9_-]+$/.test(rawSlug)) {
-        if (isMounted) {
-          setBusiness(null);
-          setInvalidLink(true);
-          setLoading(false);
-        }
-        return;
-      }
+      // Let getBusinessBySlug handle the query safely without a strict regex block
 
       try {
-        const firestoreBiz = await getBusinessBySlug(rawSlug);
+        let decodedSlug = rawSlug;
+        try {
+          decodedSlug = decodeURIComponent(rawSlug).trim();
+        } catch (e) {
+          decodedSlug = rawSlug.trim();
+        }
+
+        const firestoreBiz = await getBusinessBySlug(decodedSlug);
         if (firestoreBiz) {
           if (isMounted) {
             setBusiness(firestoreBiz);

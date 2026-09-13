@@ -333,12 +333,37 @@ export async function getBusinessBySlug(slug: string): Promise<PublicBusinessPro
   if (db) {
     const path = 'businesses';
     try {
-      const q = query(
-        collection(db, path),
-        where('slug', '==', cleanSlug),
-        limit(1)
-      );
-      const snap = await getDocs(q);
+      // 1. Try lowercase slug match
+      let q = query(collection(db, path), where('slug', '==', cleanSlug), limit(1));
+      let snap = await getDocs(q);
+
+      // 2. Try raw case-sensitive slug match if not found
+      if (snap.empty && slug !== cleanSlug) {
+        q = query(collection(db, path), where('slug', '==', slug), limit(1));
+        snap = await getDocs(q);
+      }
+      
+      // 3. Try fallback where 'businessId' or 'id' is used instead of slug
+      if (snap.empty) {
+         const docRef = doc(db, path, cleanSlug);
+         const docSnap = await getDoc(docRef);
+         if (docSnap.exists()) {
+           const profile = toPublicBusinessProfile(mapDocToBusiness(docSnap.id, docSnap.data()));
+           publicSlugCache.set(cleanSlug, { profile, expiresAt: Date.now() + 60_000 });
+           return profile;
+         }
+         
+         // Also check raw slug as document ID
+         if (slug !== cleanSlug) {
+           const rawDocRef = doc(db, path, slug);
+           const rawDocSnap = await getDoc(rawDocRef);
+           if (rawDocSnap.exists()) {
+             const profile = toPublicBusinessProfile(mapDocToBusiness(rawDocSnap.id, rawDocSnap.data()));
+             publicSlugCache.set(cleanSlug, { profile, expiresAt: Date.now() + 60_000 });
+             return profile;
+           }
+         }
+      }
 
       if (!snap.empty) {
         const firstDoc = snap.docs[0];
