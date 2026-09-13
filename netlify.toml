@@ -10,6 +10,12 @@
   to = "/.netlify/functions/send-email"
   status = 200
 
+# Dynamic Sitemap Endpoint
+[[redirects]]
+  from = "/sitemap.xml"
+  to = "/.netlify/functions/sitemap"
+  status = 200
+
 # React Single Page Application (SPA) Client-side Routing Redirects
 # Ensures /dashboard, /login, /r/:slug, /admin, etc. resolve to index.html on hard refresh
 [[redirects]]
