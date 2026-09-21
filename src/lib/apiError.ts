@@ -63,7 +63,7 @@ export function toAppError(error: unknown, fallbackMessage = 'An unexpected erro
     // Firestore permission denied
     if (errCode === 'permission-denied' || rawMessage.includes('permission-denied') || rawMessage.includes('Missing or insufficient permissions')) {
       return new AppError(
-        'Access Denied: You do not have permission to perform this operation or access this resource.',
+        'Unable to load your data right now. Please try again.',
         403,
         'FORBIDDEN'
       );

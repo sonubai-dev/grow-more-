@@ -45,8 +45,6 @@ interface AuthContextType {
   createBusiness: (input: Omit<CreateBusinessInput, 'ownerId'>) => Promise<Business>;
   updateBusiness: (updates: UpdateBusinessInput) => Promise<Business>;
   refreshBusiness: () => Promise<Business | null>;
-  loginAsBusiness: (businessId?: string) => void;
-  loginAsAdmin: () => void;
   updateCurrentBusiness: (updated: Partial<Business>) => void;
   verifyAdminStatus: () => Promise<boolean>;
 }
@@ -151,20 +149,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setLoading(false);
       }
     } else {
-      // Local demo fallback
-      try {
-        const savedUserStr = localStorage.getItem(LOCAL_STORAGE_USER_KEY);
-        const savedBizStr = localStorage.getItem(LOCAL_STORAGE_BIZ_KEY);
-        if (savedUserStr) {
-          const parsedUser = JSON.parse(savedUserStr);
-          setUser(parsedUser);
-          if (savedBizStr && parsedUser.role !== 'admin') {
-            setCurrentBusiness(JSON.parse(savedBizStr));
-          }
-        }
-      } catch (e) {
-        console.warn('Error reading saved session:', e);
-      }
+      // Firebase not configured
+      console.warn('Firebase is not configured. Authentication is disabled.');
       setLoading(false);
     }
   }, []);
@@ -201,134 +187,84 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
     }
 
-    if (isFirebaseConfigured && auth) {
-      const createdUser = await signUpWithEmail(email, password, resolvedName);
-      const uid = createdUser?.uid || `user_${Date.now()}`;
-
-      // Initialize user record in Firestore with non-admin role
-      await setUserRoleInFirestore(uid, email, 'business', resolvedName);
-
-      const appUser: User = {
-        id: uid,
-        email: email,
-        name: resolvedName,
-        role: 'business',
-        avatarUrl: createdUser?.photoURL || undefined,
-      };
-      setUser(appUser);
-      setCurrentBusiness(null); // Triggers onboarding
-    } else {
-      // Local fallback
-      const uid = `usr_${Math.random().toString(36).substring(2, 9)}`;
-      const appUser: User = {
-        id: uid,
-        email: email,
-        name: resolvedName,
-        role: 'business',
-      };
-      setUser(appUser);
-      setCurrentBusiness(null);
-      try {
-        localStorage.setItem(LOCAL_STORAGE_USER_KEY, JSON.stringify(appUser));
-        localStorage.removeItem(LOCAL_STORAGE_BIZ_KEY);
-      } catch {}
+    if (!isFirebaseConfigured || !auth) {
+      throw new Error('Sign up is currently unavailable. Please check system configuration.');
     }
+
+    const createdUser = await signUpWithEmail(email, password, resolvedName);
+    const uid = createdUser?.uid;
+    
+    if (!uid) {
+      throw new Error('Sign up failed: Missing UID.');
+    }
+
+    // Initialize user record in Firestore with non-admin role
+    await setUserRoleInFirestore(uid, email, 'business', resolvedName);
+
+    const appUser: User = {
+      id: uid,
+      email: email,
+      name: resolvedName,
+      role: 'business',
+      avatarUrl: createdUser?.photoURL || undefined,
+    };
+    setUser(appUser);
+    setCurrentBusiness(null); // Triggers onboarding
   };
 
   const login = async (email: string, password: string) => {
-    if (isFirebaseConfigured && auth) {
-      const loggedInUser = await signInWithEmail(email, password);
-      const displayName = loggedInUser?.displayName || email.split('@')[0];
-      const uid = loggedInUser?.uid || `user_${Date.now()}`;
-      
-      const isVerifiedAdmin = await verifyUserAdminRole(uid);
+    if (!isFirebaseConfigured || !auth) {
+      throw new Error('Authentication is currently unavailable. Please check system configuration.');
+    }
+    const loggedInUser = await signInWithEmail(email, password);
+    const displayName = loggedInUser?.displayName || email.split('@')[0];
+    const uid = loggedInUser?.uid;
+    
+    if (!uid) {
+      throw new Error('Authentication failed: Missing UID.');
+    }
+    
+    const isVerifiedAdmin = await verifyUserAdminRole(uid);
 
-      const appUser: User = {
-        id: uid,
-        email: loggedInUser?.email || email,
-        name: displayName,
-        role: isVerifiedAdmin ? 'admin' : 'business',
-        avatarUrl: loggedInUser?.photoURL || undefined,
-      };
-      setUser(appUser);
+    const appUser: User = {
+      id: uid,
+      email: loggedInUser?.email || email,
+      name: displayName,
+      role: isVerifiedAdmin ? 'admin' : 'business',
+      avatarUrl: loggedInUser?.photoURL || undefined,
+    };
+    setUser(appUser);
 
-      if (!isVerifiedAdmin && loggedInUser?.uid) {
-        await loadUserBusiness(loggedInUser.uid, loggedInUser.email || email);
-      } else {
-        setCurrentBusiness(null);
-      }
+    if (!isVerifiedAdmin) {
+      await loadUserBusiness(uid, loggedInUser.email || email);
     } else {
-      // Local demo login fallback
-      const isAdmin = email.toLowerCase() === 'admin@zellonai.online';
-      const displayName = email.split('@')[0];
-      const uid = `usr_${Math.random().toString(36).substring(2, 9)}`;
-
-      const appUser: User = {
-        id: uid,
-        email: email,
-        name: displayName.charAt(0).toUpperCase() + displayName.slice(1),
-        role: isAdmin ? 'admin' : 'business',
-      };
-
-      setUser(appUser);
-      if (!isAdmin) {
-        const demoBiz = MOCK_BUSINESSES[0];
-        setCurrentBusiness(demoBiz);
-        try {
-          localStorage.setItem(LOCAL_STORAGE_BIZ_KEY, JSON.stringify(demoBiz));
-        } catch {}
-      } else {
-        setCurrentBusiness(null);
-      }
-
-      try {
-        localStorage.setItem(LOCAL_STORAGE_USER_KEY, JSON.stringify(appUser));
-      } catch {}
+      setCurrentBusiness(null);
     }
   };
 
   const loginWithGoogle = async () => {
-    if (isFirebaseConfigured && auth) {
-      const gUser = await signInWithGoogle();
-      if (!gUser) throw new Error('Google Sign-in failed');
-      const email = gUser.email || '';
-      const name = gUser.displayName || email.split('@')[0] || 'Google User';
-      const isVerifiedAdmin = await verifyUserAdminRole(gUser.uid);
+    if (!isFirebaseConfigured || !auth) {
+      throw new Error('Google Sign-in is currently unavailable.');
+    }
+    const gUser = await signInWithGoogle();
+    if (!gUser) throw new Error('Google Sign-in failed');
+    const email = gUser.email || '';
+    const name = gUser.displayName || email.split('@')[0] || 'Google User';
+    const isVerifiedAdmin = await verifyUserAdminRole(gUser.uid);
 
-      const appUser: User = {
-        id: gUser.uid,
-        email: email,
-        name: name,
-        role: isVerifiedAdmin ? 'admin' : 'business',
-        avatarUrl: gUser.photoURL || undefined,
-      };
+    const appUser: User = {
+      id: gUser.uid,
+      email: email,
+      name: name,
+      role: isVerifiedAdmin ? 'admin' : 'business',
+      avatarUrl: gUser.photoURL || undefined,
+    };
 
-      setUser(appUser);
-      if (!isVerifiedAdmin) {
-        await loadUserBusiness(gUser.uid, email);
-      } else {
-        setCurrentBusiness(null);
-      }
+    setUser(appUser);
+    if (!isVerifiedAdmin) {
+      await loadUserBusiness(gUser.uid, email);
     } else {
-      // Fallback demo Google user
-      const demoEmail = 'demo.owner@google.com';
-      const demoName = 'Google Business Demo';
-      const demoUid = 'usr_google_demo';
-      const biz = MOCK_BUSINESSES[0];
-
-      const appUser: User = {
-        id: demoUid,
-        email: demoEmail,
-        name: demoName,
-        role: 'business',
-      };
-      setUser(appUser);
-      setCurrentBusiness(biz);
-
-      try {
-        localStorage.setItem(LOCAL_STORAGE_USER_KEY, JSON.stringify(appUser));
-        localStorage.setItem(LOCAL_STORAGE_BIZ_KEY, JSON.stringify(biz));
-      } catch {}
+      setCurrentBusiness(null);
     }
   };
 
@@ -342,10 +278,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setFirebaseUser(null);
     setCurrentBusiness(null);
     try {
-      localStorage.removeItem(LOCAL_STORAGE_USER_KEY);
-      localStorage.removeItem(LOCAL_STORAGE_BIZ_KEY);
-      localStorage.removeItem('reviewflow_pending_onboarding');
-    } catch {}
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('reviewflow_')) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach((key) => localStorage.removeItem(key));
+    } catch (e) {
+      console.warn('Error clearing cache on logout:', e);
+    }
   };
 
   const resetPassword = async (email: string) => {
@@ -382,34 +325,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return await loadUserBusiness(user.id, user.email);
   };
 
-  // Preset switchers for rapid development testing & role verification
-  const loginAsBusiness = (businessId: string = 'biz_1') => {
-    const biz = MOCK_BUSINESSES.find((b) => b.id === businessId) || MOCK_BUSINESSES[0];
-    const appUser: User = {
-      id: `user_${biz.id}`,
-      email: biz.contactEmail,
-      name: `${biz.name} Admin`,
-      role: 'business',
-      businessId: biz.id,
-      avatarUrl: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=200',
-    };
-    setUser(appUser);
-    setCurrentBusiness(biz);
-    try {
-      localStorage.setItem(LOCAL_STORAGE_USER_KEY, JSON.stringify(appUser));
-      localStorage.setItem(LOCAL_STORAGE_BIZ_KEY, JSON.stringify(biz));
-    } catch {}
-  };
-
-  const loginAsAdmin = () => {
-    const adminUser = MOCK_USERS[1];
-    setUser(adminUser);
-    setCurrentBusiness(null);
-    try {
-      localStorage.setItem(LOCAL_STORAGE_USER_KEY, JSON.stringify(adminUser));
-      localStorage.removeItem(LOCAL_STORAGE_BIZ_KEY);
-    } catch {}
-  };
+  // Remove loginAsBusiness and loginAsAdmin
 
   const updateCurrentBusiness = (updated: Partial<Business>) => {
     if (currentBusiness) {
@@ -447,8 +363,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         createBusiness,
         updateBusiness,
         refreshBusiness,
-        loginAsBusiness,
-        loginAsAdmin,
         updateCurrentBusiness,
         verifyAdminStatus,
       }}

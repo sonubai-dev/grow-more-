@@ -576,7 +576,7 @@ export async function getBusinessAggregatedStats(
   // Authorization check: If ownerId and requesterUserId are provided, verify ownership
   if (!requesterIsAdmin && requesterUserId && ownerId && requesterUserId !== ownerId) {
     throw new AppError(
-      'Forbidden: Access to another business\'s private analytics is denied.',
+      'Unable to load your data right now. Please try again.',
       403,
       'FORBIDDEN'
     );

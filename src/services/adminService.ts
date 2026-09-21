@@ -65,10 +65,16 @@ export function saveLocalAllBusinesses(businesses: Business[]) {
 export async function verifyUserAdminRole(userId: string): Promise<boolean> {
   if (!userId) return false;
 
-  // 1. Fast check for bootstrap admin email (0 network overhead)
+  // 1. Fast check for bootstrap admin email via environment variables
   const currentEmail = auth?.currentUser?.email?.toLowerCase();
-  if (currentEmail === 'admin@zellonai.online' || currentEmail === 'ssdd747346@gmail.com') {
-    return true;
+  
+  if (currentEmail) {
+    const adminEmailsStr = import.meta.env.VITE_ADMIN_EMAILS || '';
+    const adminEmails = adminEmailsStr.split(',').map((e: string) => e.trim().toLowerCase());
+    
+    if (adminEmails.includes(currentEmail)) {
+      return true;
+    }
   }
 
   // 2. Check current user's Firebase Auth Custom Claims (using cached claims first)

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Sparkles, Mail, Lock, ArrowRight, Shield, Building2, AlertCircle } from 'lucide-react';
+import { Sparkles, Mail, Lock, ArrowRight, AlertCircle } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Card } from '../../components/ui/Card';
@@ -14,7 +14,7 @@ export const LoginPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const { login, loginAsBusiness, loginAsAdmin } = useAuth();
+  const { login } = useAuth();
   const { addToast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
@@ -50,7 +50,9 @@ export const LoginPage: React.FC = () => {
     try {
       await login(email, password);
       addToast('success', 'Welcome back to your ZellonAI dashboard!', 'Signed In');
-      const isAdminLogin = email.toLowerCase().trim() === 'admin@zellonai.online';
+      const adminEmailsStr = import.meta.env.VITE_ADMIN_EMAILS || '';
+      const adminEmails = adminEmailsStr.split(',').map((e: string) => e.trim().toLowerCase());
+      const isAdminLogin = adminEmails.includes(email.toLowerCase().trim());
       navigate(isAdminLogin ? '/admin' : redirectPath, { replace: true });
     } catch (err: unknown) {
       const friendlyMsg = getAuthErrorMessage(err);
@@ -59,18 +61,6 @@ export const LoginPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleQuickBusiness = () => {
-    loginAsBusiness('biz_1');
-    addToast('info', 'Logged in as Demo Business Owner (Apex Dental)', 'Demo Access');
-    navigate('/dashboard');
-  };
-
-  const handleQuickAdmin = () => {
-    loginAsAdmin();
-    addToast('info', 'Logged in as System Admin', 'Admin Mode');
-    navigate('/admin');
   };
 
   return (
@@ -167,36 +157,6 @@ export const LoginPage: React.FC = () => {
             </Button>
           </form>
 
-          {/* Quick 1-Click Role Presets */}
-          <div className="mt-6 pt-6 border-t border-slate-100">
-            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider text-center mb-3">
-              One-Click Demo Profiles
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                id="quick-login-business"
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleQuickBusiness}
-                leftIcon={<Building2 className="w-3.5 h-3.5 text-indigo-600" />}
-                className="text-xs"
-              >
-                Business Owner
-              </Button>
-              <Button
-                id="quick-login-admin"
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleQuickAdmin}
-                leftIcon={<Shield className="w-3.5 h-3.5 text-amber-600" />}
-                className="text-xs"
-              >
-                System Admin
-              </Button>
-            </div>
-          </div>
         </Card>
 
         {/* Back Link */}
