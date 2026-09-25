@@ -156,6 +156,9 @@ export const BusinessOnboardingView: React.FC = () => {
         `Welcome to ZellonAI! Your public review portal is live at /r/${newBiz.slug}`,
         'Business Created!'
       );
+      
+      // Navigate to dashboard
+      window.location.href = '/dashboard';
     } catch (err: unknown) {
       console.error('Business onboarding error:', err);
       const appErr = toAppError(err, 'Failed to create business profile. Please check your details.');

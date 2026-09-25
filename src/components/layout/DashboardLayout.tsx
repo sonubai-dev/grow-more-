@@ -96,7 +96,7 @@ export const DashboardLayout: React.FC = () => {
             </button>
             <div>
               <h1 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
-                <span className="truncate max-w-[140px] sm:max-w-[240px] md:max-w-none">
+                <span className="truncate max-w-[140px] sm:max-w-[240px] md:max-w-[200px] lg:max-w-[400px]">
                   {currentBusiness?.businessName || currentBusiness?.name || 'My Business'}
                 </span>
                 <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">

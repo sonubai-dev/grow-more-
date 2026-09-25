@@ -11,7 +11,9 @@ import {
   ExternalLink,
   Shield,
   LogOut,
-  ChevronRight
+  ChevronRight,
+  Plus,
+  CheckCircle2
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -21,8 +23,17 @@ export interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ isAdmin = false, onCloseMobile }) => {
-  const { user, currentBusiness, logout } = useAuth();
+  const { user, currentBusiness, userBusinesses = [], switchBusiness, logout } = useAuth();
   const location = useLocation();
+
+  const getPlanLimit = (planName?: string) => {
+    if (!planName) return 1;
+    const lower = planName.toLowerCase();
+    if (lower.includes('enterprise')) return 20;
+    if (lower.includes('growth')) return 3;
+    return 1;
+  };
+  const canAddBusiness = userBusinesses.length < getPlanLimit(currentBusiness?.plan);
 
   const businessNavItems = [
     { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, exact: true },
@@ -63,17 +74,60 @@ export const Sidebar: React.FC<SidebarProps> = ({ isAdmin = false, onCloseMobile
         </Link>
       </div>
 
-      {/* Active Business / Admin Banner */}
+      {/* Business Switcher */}
       {!isAdmin && currentBusiness && (
-        <div className="mx-3 mt-3 p-3 rounded-xl bg-slate-800/80 border border-slate-700/60">
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[11px] font-semibold text-indigo-400 uppercase tracking-wider">Active Business</span>
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-medium capitalize">
-              {currentBusiness.plan}
+        <div className="mx-3 mt-3 space-y-1">
+          <div className="px-3 pb-1 pt-1 flex items-center justify-between">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+              Businesses
             </span>
+            {canAddBusiness && (
+              <Link 
+                to="/dashboard/add-business"
+                onClick={onCloseMobile}
+                className="text-[10px] font-bold text-indigo-400 hover:text-indigo-300 flex items-center gap-0.5"
+                title="Add Business"
+              >
+                <Plus className="w-3 h-3" /> Add
+              </Link>
+            )}
           </div>
-          <p className="text-xs font-bold text-white truncate">{currentBusiness.name}</p>
-          <div className="mt-2 pt-2 border-t border-slate-700/60 flex items-center justify-between">
+          
+          <div className="space-y-1 max-h-[160px] overflow-y-auto pr-1">
+            {userBusinesses.map(biz => {
+              const isActive = biz.id === currentBusiness.id;
+              return (
+                <button
+                  key={biz.id}
+                  onClick={() => switchBusiness(biz.id)}
+                  className={`w-full text-left px-3 py-2 rounded-xl border flex flex-col transition-colors ${
+                    isActive 
+                      ? 'bg-slate-800/80 border-slate-700/60' 
+                      : 'bg-transparent border-transparent hover:bg-slate-800/40 hover:border-slate-700/40'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-0.5">
+                    <span className="text-xs font-bold text-white truncate pr-2">{biz.businessName || biz.name}</span>
+                    {isActive ? (
+                      <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                    ) : (
+                      <div className="w-3.5 h-3.5 rounded-full border border-slate-600 shrink-0" />
+                    )}
+                  </div>
+                  <span className="text-[10px] text-slate-400 truncate capitalize">{biz.plan || 'Starter'} Plan</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {!canAddBusiness && (
+            <div className="px-3 pt-1 text-[10px] text-slate-500 flex justify-between">
+              <span>{userBusinesses.length} / {getPlanLimit(currentBusiness?.plan)} limit reached</span>
+              <Link to="/dashboard/settings" className="text-indigo-400 hover:underline">Upgrade</Link>
+            </div>
+          )}
+
+          <div className="px-3 mt-2 pt-2 border-t border-slate-800 flex items-center justify-between">
             <Link
               to={publicReviewUrl}
               target="_blank"
@@ -145,8 +199,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isAdmin = false, onCloseMobile
               {user ? user.name.charAt(0) : 'U'}
             </div>
             <div className="flex flex-col truncate">
-              <span className="text-xs font-semibold text-white truncate">{user?.name || 'Demo User'}</span>
-              <span className="text-[10px] text-slate-400 truncate">{user?.email || 'user@example.com'}</span>
+              <span className="text-xs font-semibold text-white truncate">{user?.name || 'Loading...'}</span>
+              <span className="text-[10px] text-slate-400 truncate">{user?.email || ''}</span>
             </div>
           </div>
           <button

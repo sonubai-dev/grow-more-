@@ -361,12 +361,12 @@ export async function getBusinessBySlug(slug: string): Promise<PublicBusinessPro
     const path = 'businesses';
     try {
       // 1. Try lowercase slug match
-      let q = query(collection(db, path), where('slug', '==', cleanSlug), limit(1));
+      let q = query(collection(db, path), where('slug', '==', cleanSlug), where('isActive', '==', true), limit(1));
       let snap = await getDocs(q);
 
       // 2. Try raw case-sensitive slug match if not found
       if (snap.empty && slug !== cleanSlug) {
-        q = query(collection(db, path), where('slug', '==', slug), limit(1));
+        q = query(collection(db, path), where('slug', '==', slug), where('isActive', '==', true), limit(1));
         snap = await getDocs(q);
       }
       
@@ -449,6 +449,25 @@ export async function createBusinessProfile(input: CreateBusinessInput): Promise
   // Authenticate user ownership
   if (auth?.currentUser && auth.currentUser.uid !== input.ownerId) {
     throw new AppError('Forbidden: You cannot create a business on behalf of another user account.', 403, 'FORBIDDEN');
+  }
+
+  // Server-Side Limit Check
+  if (db) {
+    const existingBusinesses = await getBusinessesByOwnerId(input.ownerId);
+    let maxLimit = 1; // Default to Starter
+    for (const biz of existingBusinesses) {
+      const plan = biz.plan?.toLowerCase() || '';
+      if (plan.includes('enterprise')) { maxLimit = 20; break; }
+      if (plan.includes('growth')) maxLimit = Math.max(maxLimit, 3);
+    }
+
+    if (existingBusinesses.length >= maxLimit) {
+      throw new AppError(
+        `Business Limit Reached: Your current plan allows up to ${maxLimit} business(es). Please upgrade your plan to add more.`, 
+        403, 
+        'BUSINESS_LIMIT_REACHED'
+      );
+    }
   }
 
   const cleanBusinessName = sanitizeString(input.businessName, 100);

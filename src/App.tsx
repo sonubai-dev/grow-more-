@@ -11,6 +11,9 @@ import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { DashboardLayout } from './components/layout/DashboardLayout';
 import { AdminLayout } from './components/layout/AdminLayout';
 
+// Components
+import { BusinessOnboardingView } from './components/onboarding/BusinessOnboardingView';
+
 // Lazy Loaded Public Pages
 const LandingPage = lazy(() => import('./pages/public/LandingPage').then(m => ({ default: m.LandingPage })));
 const LoginPage = lazy(() => import('./pages/public/LoginPage').then(m => ({ default: m.LoginPage })));
@@ -92,6 +95,7 @@ export default function App() {
               <Route path="review-page" element={<ReviewPageConfig />} />
               <Route path="profile" element={<BusinessProfilePage />} />
               <Route path="settings" element={<SettingsPage />} />
+              <Route path="add-business" element={<BusinessOnboardingView />} />
             </Route>
 
             {/* Protected Platform Admin Routes */}

@@ -37,7 +37,7 @@ export const Footer: React.FC = () => {
               <li><a href="#features" className="hover:text-white transition-colors">Core Features</a></li>
               <li><a href="#how-it-works" className="hover:text-white transition-colors">How It Works</a></li>
               <li><a href="#pricing" className="hover:text-white transition-colors">Pricing Plans</a></li>
-              <li><Link to="/r/solita-solutions" className="hover:text-white transition-colors text-amber-400 flex items-center gap-1"><Star className="w-3 h-3 fill-amber-400" /> Sample Review Page</Link></li>
+              <li><a href="https://g.page/r/CaN_yK2UD5qJEBI/review" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors text-amber-400 flex items-center gap-1"><Star className="w-3 h-3 fill-amber-400" /> Sample Review Page</a></li>
             </ul>
           </div>
 

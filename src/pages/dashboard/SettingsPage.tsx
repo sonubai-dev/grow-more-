@@ -24,7 +24,7 @@ import { sendNegativeReviewAlert, sendSubscriptionSuccessEmail, sendEnterpriseLe
 import { initiateRazorpayPayment } from '../../services/razorpayService';
 
 export const SettingsPage: React.FC = () => {
-  const { currentBusiness, user } = useAuth();
+  const { currentBusiness, user, updateBusiness } = useAuth();
   const { addToast } = useToast();
 
   const [emailAlerts, setEmailAlerts] = useState(true);
@@ -35,9 +35,16 @@ export const SettingsPage: React.FC = () => {
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('Staff Manager');
 
-  // Plan state
-  const [currentPlan, setCurrentPlan] = useState<'starter' | 'growth' | 'enterprise'>('growth');
+  const [currentPlan, setCurrentPlan] = useState<'starter' | 'growth' | 'enterprise'>(
+    (currentBusiness?.plan?.toLowerCase() as 'starter' | 'growth' | 'enterprise') || 'starter'
+  );
   const [planModalOpen, setPlanModalOpen] = useState(false);
+
+  React.useEffect(() => {
+    if (currentBusiness?.plan) {
+      setCurrentPlan(currentBusiness.plan.toLowerCase() as 'starter' | 'growth' | 'enterprise');
+    }
+  }, [currentBusiness?.plan]);
 
   const planDetails = {
     starter: { name: 'ZellonAI Starter', price: '₹99 / month', locations: '1 Location' },
@@ -129,20 +136,27 @@ export const SettingsPage: React.FC = () => {
       customerName: currentBusiness?.ownerName || '',
       customerEmail: currentBusiness?.email || '',
       customerPhone: currentBusiness?.phone || '',
-      onSuccess: (paymentId, subscriptionId) => {
+      onSuccess: async (paymentId, subscriptionId) => {
         setProcessingPayment(false);
-        setCurrentPlan(plan);
-        addToast(
-          'success',
-          `Subscription setup complete with 14-day Free Trial! (Sub ID: ${subscriptionId})`,
-          'Subscription Updated'
-        );
-        sendSubscriptionSuccessEmail({
-          to: currentBusiness?.email || '',
-          ownerName: currentBusiness?.ownerName || '',
-          planName: planDetails[plan].name,
-          amount: plan === 'starter' ? '₹99' : '₹499',
-        }).catch(console.warn);
+        try {
+          if (currentBusiness?.id) {
+            await updateBusiness({ id: currentBusiness.id, plan });
+          }
+          setCurrentPlan(plan);
+          addToast(
+            'success',
+            `Subscription setup complete with 14-day Free Trial! (Sub ID: ${subscriptionId})`,
+            'Subscription Updated'
+          );
+          sendSubscriptionSuccessEmail({
+            to: currentBusiness?.email || '',
+            ownerName: currentBusiness?.ownerName || '',
+            planName: planDetails[plan].name,
+            amount: plan === 'starter' ? '₹99' : '₹499',
+          }).catch(console.warn);
+        } catch (error: any) {
+          addToast('error', error.message || 'Failed to update plan', 'Update Error');
+        }
       },
       onError: (errorMsg) => {
         setProcessingPayment(false);

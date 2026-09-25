@@ -12,6 +12,7 @@ import {
 } from '../services/authService';
 import {
   getBusinessByOwnerId,
+  getBusinessesByOwnerId,
   createBusinessProfile,
   updateBusinessProfile,
   CreateBusinessInput,
@@ -27,6 +28,7 @@ interface AuthContextType {
   user: User | null;
   firebaseUser: FirebaseUser | null;
   currentBusiness: Business | null;
+  userBusinesses: Business[];
   loading: boolean;
   businessLoading: boolean;
   needsOnboarding: boolean;
@@ -46,6 +48,7 @@ interface AuthContextType {
   updateBusiness: (updates: UpdateBusinessInput) => Promise<Business>;
   refreshBusiness: () => Promise<Business | null>;
   updateCurrentBusiness: (updated: Partial<Business>) => void;
+  switchBusiness: (businessId: string) => void;
   verifyAdminStatus: () => Promise<boolean>;
 }
 
@@ -58,10 +61,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [currentBusiness, setCurrentBusiness] = useState<Business | null>(null);
+  const [userBusinesses, setUserBusinesses] = useState<Business[]>([]);
   const [loading, setLoading] = useState(true);
   const [businessLoading, setBusinessLoading] = useState(false);
 
   const inFlightBusinessRef = useRef<{ userId: string; promise: Promise<Business | null> } | null>(null);
+
+  const switchBusiness = (businessId: string) => {
+    const biz = userBusinesses.find(b => b.id === businessId);
+    if (biz) {
+      setCurrentBusiness(biz);
+      try {
+        localStorage.setItem(LOCAL_STORAGE_BIZ_KEY, JSON.stringify(biz));
+      } catch {}
+    }
+  };
 
   // Load business from Firestore or local cache with in-flight deduplication
   const loadUserBusiness = async (userId: string, email: string): Promise<Business | null> => {
@@ -73,31 +87,47 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setBusinessLoading(true);
       try {
         if (isFirebaseConfigured) {
-          const firestoreBiz = await getBusinessByOwnerId(userId, userId);
-          if (firestoreBiz) {
-            setCurrentBusiness(firestoreBiz);
+          const allBiz = await getBusinessesByOwnerId(userId, userId);
+          setUserBusinesses(allBiz || []);
+          
+          if (allBiz && allBiz.length > 0) {
+            // Check if there's a previously selected business in cache
+            let selectedBiz = allBiz[0];
+            const cached = localStorage.getItem(LOCAL_STORAGE_BIZ_KEY);
+            if (cached) {
+              const parsed: Business = JSON.parse(cached);
+              const found = allBiz.find(b => b.id === parsed.id);
+              if (found) {
+                selectedBiz = found;
+              }
+            }
+
+            setCurrentBusiness(selectedBiz);
             try {
-              localStorage.setItem(LOCAL_STORAGE_BIZ_KEY, JSON.stringify(firestoreBiz));
+              localStorage.setItem(LOCAL_STORAGE_BIZ_KEY, JSON.stringify(selectedBiz));
             } catch {}
-            return firestoreBiz;
+            return selectedBiz;
           }
         }
 
-        // Check local cache
+        // Check local cache if offline or no businesses
         const cached = localStorage.getItem(LOCAL_STORAGE_BIZ_KEY);
         if (cached) {
           const parsed: Business = JSON.parse(cached);
           if (parsed.ownerId === userId || parsed.contactEmail === email) {
             setCurrentBusiness(parsed);
+            setUserBusinesses([parsed]);
             return parsed;
           }
         }
 
         setCurrentBusiness(null);
+        setUserBusinesses([]);
         return null;
       } catch (err) {
         console.warn('Error loading user business from Firestore:', err);
         setCurrentBusiness(null);
+        setUserBusinesses([]);
         return null;
       } finally {
         setBusinessLoading(false);
@@ -351,6 +381,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         user,
         firebaseUser,
         currentBusiness,
+        userBusinesses,
         loading,
         businessLoading,
         needsOnboarding,
@@ -364,6 +395,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         updateBusiness,
         refreshBusiness,
         updateCurrentBusiness,
+        switchBusiness,
         verifyAdminStatus,
       }}
     >

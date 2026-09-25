@@ -186,11 +186,11 @@ export const LandingPage: React.FC = () => {
                   Start Free 14-Day Trial
                 </Button>
               </Link>
-              <Link to="/r/solita-solutions" className="w-full sm:w-auto">
+              <a href="https://g.page/r/CaN_yK2UD5qJEBI/review" target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto">
                 <Button id="hero-cta-demo" variant="outline" size="lg" className="w-full sm:w-auto" leftIcon={<Star className="w-4 h-4 text-amber-500 fill-amber-500" />}>
                   Try Live Review Page
                 </Button>
-              </Link>
+              </a>
             </div>
 
             {/* Micro reassurance badges */}
@@ -599,7 +599,7 @@ export const LandingPage: React.FC = () => {
                 Create Your Review Link Now
               </Button>
             </Link>
-            <Link to="/r/solita-solutions" className="w-full sm:w-auto">
+            <a href="https://g.page/r/CaN_yK2UD5qJEBI/review" target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto">
               <Button
                 id="cta-demo-review-btn"
                 variant="outline-white"
@@ -608,7 +608,7 @@ export const LandingPage: React.FC = () => {
               >
                 View Customer Experience
               </Button>
-            </Link>
+            </a>
           </div>
         </div>
       </section>
