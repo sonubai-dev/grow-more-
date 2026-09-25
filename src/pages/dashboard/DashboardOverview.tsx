@@ -264,7 +264,7 @@ export const DashboardOverview: React.FC = () => {
             leftIcon={<RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />}
             className="text-xs font-semibold"
           >
-            Refresh Firestore
+            Refresh Data
           </Button>
         </div>
       </div>

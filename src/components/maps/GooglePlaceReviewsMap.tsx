@@ -11,35 +11,12 @@ interface GooglePlaceReviewsMapProps {
   showMap?: boolean;
 }
 
-// High quality fallback reviews for preview and offline scenarios
-const SAMPLE_FALLBACK_REVIEWS: GooglePlaceReview[] = [
-  {
-    authorName: 'Michael Chang',
-    authorUri: 'https://maps.google.com',
-    rating: 5,
-    text: 'Dr. Jenkins and the entire team are outstanding! Very gentle and professional. The clinic is spotless and state-of-the-art.',
-    relativePublishTimeDescription: '2 weeks ago',
-  },
-  {
-    authorName: 'Sarah Larson',
-    authorUri: 'https://maps.google.com',
-    rating: 5,
-    text: 'Best experience I have had with a local clinic. Friendly front desk, zero wait time, and clear pricing upfront.',
-    relativePublishTimeDescription: 'a month ago',
-  },
-  {
-    authorName: 'David Rodriguez',
-    authorUri: 'https://maps.google.com',
-    rating: 5,
-    text: 'Highly recommend! They went above and beyond to make my visit comfortable. Five stars without hesitation!',
-    relativePublishTimeDescription: '2 months ago',
-  },
-];
+// No fallback reviews in production
 
 export const GooglePlaceReviewsMap: React.FC<GooglePlaceReviewsMapProps> = ({
-  placeId = 'ChIJpyiwa4Zw44kRBQSGWKv4wgA', // Default to Faneuil Hall Marketplace or current business placeId
-  businessName = 'Apex Dental Care',
-  address = '742 Evergreen Terrace, Suite 100, Austin, TX',
+  placeId,
+  businessName,
+  address,
   className = '',
   showMap = true,
 }) => {
@@ -47,7 +24,8 @@ export const GooglePlaceReviewsMap: React.FC<GooglePlaceReviewsMapProps> = ({
   const [loading, setLoading] = useState(true);
   const [placeDetails, setPlaceDetails] = useState<GooglePlaceDetails | null>(null);
   const [selectedReviewIndex, setSelectedReviewIndex] = useState<number>(0);
-  const [activePlaceId, setActivePlaceId] = useState<string>(placeId);
+  const [activePlaceId, setActivePlaceId] = useState<string | undefined>(placeId);
+  const [errorState, setErrorState] = useState<string | null>(null);
 
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
   const markerInstanceRef = useRef<any>(null);
@@ -61,8 +39,15 @@ export const GooglePlaceReviewsMap: React.FC<GooglePlaceReviewsMapProps> = ({
     let isMounted = true;
 
     async function fetchPlaceAndInitMap() {
+      if (!activePlaceId) {
+        setLoading(false);
+        setErrorState("Google Business Profile not connected");
+        return;
+      }
+
       try {
         setLoading(true);
+        setErrorState(null);
         await loadGoogleMaps();
 
         if (!isMounted) return;
@@ -78,15 +63,15 @@ export const GooglePlaceReviewsMap: React.FC<GooglePlaceReviewsMapProps> = ({
 
         // Create a new Place instance with the target placeId
         const place = new Place({
-          id: activePlaceId || 'ChIJpyiwa4Zw44kRBQSGWKv4wgA',
+          id: activePlaceId,
         });
 
         let fetchedReviews: GooglePlaceReview[] = [];
-        let location = { lat: 42.3601, lng: -71.0560 };
-        let displayName = businessName;
-        let formattedAddress = address;
-        let rating = 4.9;
-        let userRatingCount = 128;
+        let location = { lat: 0, lng: 0 };
+        let displayName = businessName || '';
+        let formattedAddress = address || '';
+        let rating = 0;
+        let userRatingCount = 0;
 
         try {
           // Call fetchFields passing 'reviews' and other needed fields
@@ -118,11 +103,15 @@ export const GooglePlaceReviewsMap: React.FC<GooglePlaceReviewsMapProps> = ({
               relativePublishTimeDescription: r.relativePublishTimeDescription || 'Verified Google Review',
             }));
           } else {
-            fetchedReviews = SAMPLE_FALLBACK_REVIEWS;
+            fetchedReviews = [];
           }
         } catch (fetchErr) {
-          console.info('Live Place details fetch fallback active:', fetchErr);
-          fetchedReviews = SAMPLE_FALLBACK_REVIEWS;
+          console.info('Live Place details fetch failed:', fetchErr);
+          if (isMounted) {
+            setErrorState("Unable to load Google Business data");
+            setLoading(false);
+          }
+          return;
         }
 
         const details: GooglePlaceDetails = {
@@ -225,15 +214,7 @@ export const GooglePlaceReviewsMap: React.FC<GooglePlaceReviewsMapProps> = ({
       } catch (err) {
         console.warn('Google Place Reviews map loader notice:', err);
         if (isMounted) {
-          setPlaceDetails({
-            id: activePlaceId,
-            displayName: businessName,
-            formattedAddress: address,
-            rating: 4.9,
-            userRatingCount: 128,
-            reviews: SAMPLE_FALLBACK_REVIEWS,
-            googleReviewUrl: `https://search.google.com/local/writereview?placeid=${activePlaceId}`,
-          });
+          setErrorState("Unable to load Google Business data");
           setLoading(false);
         }
       }
@@ -246,8 +227,31 @@ export const GooglePlaceReviewsMap: React.FC<GooglePlaceReviewsMapProps> = ({
     };
   }, [activePlaceId, businessName, address, showMap]);
 
-  const reviews = placeDetails?.reviews || SAMPLE_FALLBACK_REVIEWS;
-  const currentReview = reviews[selectedReviewIndex] || reviews[0];
+  if (loading) {
+    return (
+      <div className={`p-8 flex flex-col items-center justify-center bg-slate-50 border border-slate-200 rounded-2xl animate-pulse ${className}`}>
+        <RefreshCw className="w-8 h-8 text-indigo-400 animate-spin mb-3" />
+        <p className="text-sm font-medium text-slate-600">Loading Google Business data...</p>
+      </div>
+    );
+  }
+
+  if (errorState) {
+    return (
+      <div className={`p-8 flex flex-col items-center justify-center bg-white border border-slate-200 rounded-2xl ${className}`}>
+        <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mb-3 text-slate-400">
+          <MapPin className="w-6 h-6" />
+        </div>
+        <h4 className="text-sm font-bold text-slate-900">{errorState}</h4>
+        <p className="text-xs text-slate-500 text-center mt-1 max-w-xs">
+          Connect your Google Business Profile in settings to see live reviews and ratings.
+        </p>
+      </div>
+    );
+  }
+
+  const reviews = placeDetails?.reviews || [];
+  const currentReview = reviews.length > 0 ? reviews[selectedReviewIndex] : null;
 
   return (
     <div id="google-place-reviews-root" className={`space-y-4 ${className}`}>
@@ -281,12 +285,12 @@ export const GooglePlaceReviewsMap: React.FC<GooglePlaceReviewsMapProps> = ({
           <div className="text-right">
             <div className="flex items-center gap-1 justify-end">
               <span className="text-lg font-black text-slate-900 leading-none">
-                {placeDetails?.rating ? placeDetails.rating.toFixed(1) : '4.9'}
+                {placeDetails?.rating ? placeDetails.rating.toFixed(1) : '0.0'}
               </span>
               <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
             </div>
             <span className="text-[10px] text-slate-500 font-medium">
-              {placeDetails?.userRatingCount || 128} Google Reviews
+              {placeDetails?.userRatingCount || 0} Google Reviews
             </span>
           </div>
           <a

@@ -262,6 +262,32 @@ export function toPublicBusinessProfile(business: Business): PublicBusinessProfi
  * Fetch a business by its owner ID from Firestore.
  * Enforces authorization: requester must be the owner or verified admin.
  */
+export async function getBusinessesByOwnerId(
+  ownerId: string,
+  requesterUserId?: string
+): Promise<Business[]> {
+  if (!ownerId?.trim()) return [];
+
+  const currentUid = requesterUserId || auth?.currentUser?.uid;
+  if (currentUid && currentUid !== ownerId) {
+    console.warn(`[Security] Unauthorized getBusinessesByOwnerId attempt by ${currentUid} for ${ownerId}`);
+  }
+
+  if (!db) return [];
+
+  const path = 'businesses';
+  try {
+    const q = query(collection(db, path), where('ownerId', '==', ownerId));
+    const snap = await getDocs(q);
+
+    if (snap.empty) return [];
+
+    return snap.docs.map(doc => mapDocToBusiness(doc.id, doc.data()));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.GET, path);
+  }
+}
+
 export async function getBusinessByOwnerId(
   ownerId: string,
   requesterUserId?: string
@@ -391,13 +417,7 @@ export async function getBusinessBySlug(slug: string): Promise<PublicBusinessPro
     }
   } catch {}
 
-  // Check mock businesses fallback for demo profiles (e.g. solita-solutions, apex-dental)
-  const mockMatch = MOCK_BUSINESSES.find(b => b.slug === cleanSlug || b.id === cleanSlug);
-  if (mockMatch) {
-    const profile = toPublicBusinessProfile(mockMatch);
-    publicSlugCache.set(cleanSlug, { profile, expiresAt: Date.now() + 60_000 });
-    return profile;
-  }
+
 
   return null;
 }

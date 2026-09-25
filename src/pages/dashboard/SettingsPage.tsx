@@ -24,13 +24,13 @@ import { sendNegativeReviewAlert, sendSubscriptionSuccessEmail, sendEnterpriseLe
 import { initiateRazorpayPayment } from '../../services/razorpayService';
 
 export const SettingsPage: React.FC = () => {
-  const { currentBusiness } = useAuth();
+  const { currentBusiness, user } = useAuth();
   const { addToast } = useToast();
 
   const [emailAlerts, setEmailAlerts] = useState(true);
   const [smsAlerts, setSmsAlerts] = useState(true);
   const [weeklyDigest, setWeeklyDigest] = useState(true);
-  const [alertPhone, setAlertPhone] = useState('(555) 234-8901');
+  const [alertPhone, setAlertPhone] = useState(currentBusiness?.phone || '');
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('Staff Manager');
@@ -46,9 +46,12 @@ export const SettingsPage: React.FC = () => {
   };
 
   const [teamMembers, setTeamMembers] = useState([
-    { name: 'Dr. Sarah Jenkins', email: 'owner@apexdental.com', role: 'Owner', status: 'Active' },
-    { name: 'Michael Chang', email: 'm.chang@apexdental.com', role: 'Office Manager', status: 'Active' },
-    { name: 'Jessica Miller', email: 'jessica@apexdental.com', role: 'Reception Lead', status: 'Invited' },
+    { 
+      name: currentBusiness?.ownerName || user?.displayName || 'Business Owner', 
+      email: user?.email || currentBusiness?.email || '', 
+      role: 'Owner', 
+      status: 'Active' 
+    }
   ]);
 
   const [testingEmail, setTestingEmail] = useState(false);

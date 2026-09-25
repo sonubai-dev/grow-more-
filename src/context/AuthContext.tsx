@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useRef, ReactNod
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { auth, isFirebaseConfigured } from '../lib/firebase';
 import { User, Business } from '../types';
-import { MOCK_USERS, MOCK_BUSINESSES } from '../data/mockData';
+
 import {
   signUpWithEmail,
   signInWithEmail,
