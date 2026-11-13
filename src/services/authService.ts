@@ -8,9 +8,10 @@ import {
   User as FirebaseUser,
 } from 'firebase/auth';
 import { auth, googleProvider, isFirebaseConfigured } from '../lib/firebase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 /**
- * Maps Firebase Auth error codes to user-friendly messages.
+ * Maps Auth error codes to user-friendly messages.
  */
 export function getAuthErrorMessage(error: unknown): string {
   if (!error || typeof error !== 'object') {
@@ -19,11 +20,19 @@ export function getAuthErrorMessage(error: unknown): string {
 
   const err = error as { code?: string; message?: string };
   const code = err.code || '';
+  const message = err.message || '';
+
+  if (message.includes('Invalid login credentials')) {
+    return 'Invalid email or password. Please verify your credentials.';
+  }
+  if (message.includes('User already registered')) {
+    return 'An account with this email already exists. Please sign in instead.';
+  }
 
   switch (code) {
     case 'auth/invalid-api-key':
     case 'auth/api-key-not-valid':
-      return 'Firebase API Key is missing or invalid. Please check your environment variables or use Demo Mode.';
+      return 'API Key is missing or invalid. Please check your environment variables.';
     case 'auth/invalid-email':
       return 'The email address is invalid or poorly formatted.';
     case 'auth/user-disabled':
@@ -39,26 +48,15 @@ export function getAuthErrorMessage(error: unknown): string {
     case 'auth/weak-password':
       return 'The password is too weak. Please use at least 6 characters with letters and numbers.';
     case 'auth/operation-not-allowed':
-      return 'This sign-in method is not enabled in Firebase Console. Please enable Email/Password or Google provider in the Authentication settings.';
+      return 'This sign-in method is not enabled. Please enable Email/Password or Google provider in settings.';
     case 'auth/popup-closed-by-user':
       return 'The Google sign-in window was closed before completing authentication.';
     case 'auth/popup-blocked':
       return 'Google sign-in popup was blocked by your browser. Please allow popups for this site.';
-    case 'auth/cancelled-popup-request':
-      return 'Multiple popup requests opened simultaneously. Please try again.';
     case 'auth/network-request-failed':
       return 'A network connection error occurred. Please check your internet connection.';
-    case 'auth/too-many-requests':
-      return 'Access temporarily disabled due to many failed login attempts. Please reset your password or try again later.';
-    case 'auth/requires-recent-login':
-      return 'This operation is sensitive and requires recent authentication. Log in again before retrying.';
-    case 'auth/unauthorized-domain':
-      return 'This app domain is not authorized for OAuth in Firebase Console. Please add this domain to Authorized Domains under Firebase Auth Settings.';
     default:
-      if (err.message && (err.message.includes('API key not valid') || err.message.includes('invalid-api-key'))) {
-        return 'Firebase API Key is missing or invalid. Please configure VITE_FIREBASE_API_KEY in your settings.';
-      }
-      return err.message || 'Authentication failed. Please check your details and try again.';
+      return message || 'Authentication failed. Please check your details and try again.';
   }
 }
 
@@ -69,53 +67,135 @@ export async function signUpWithEmail(
   email: string,
   password: string,
   displayName?: string
-): Promise<FirebaseUser | null> {
-  if (!isFirebaseConfigured || !auth) {
-    return null;
+): Promise<{ uid: string; email: string; displayName?: string } | null> {
+  if (isSupabaseConfigured) {
+    const { data, error } = await supabase.auth.signUp({
+      email: email.trim(),
+      password,
+      options: {
+        data: {
+          full_name: displayName || email.split('@')[0],
+          name: displayName || email.split('@')[0],
+        },
+      },
+    });
+    if (error) throw error;
+    if (data.user) {
+      return {
+        uid: data.user.id,
+        email: data.user.email || email,
+        displayName: displayName || email.split('@')[0],
+      };
+    }
   }
-  const userCredential = await createUserWithEmailAndPassword(auth, email.trim(), password);
-  if (displayName && userCredential.user) {
-    await updateProfile(userCredential.user, { displayName });
+
+  if (isFirebaseConfigured && auth) {
+    const userCredential = await createUserWithEmailAndPassword(auth, email.trim(), password);
+    if (displayName && userCredential.user) {
+      await updateProfile(userCredential.user, { displayName });
+    }
+    return {
+      uid: userCredential.user.uid,
+      email: userCredential.user.email || email,
+      displayName: userCredential.user.displayName || displayName,
+    };
   }
-  return userCredential.user;
+
+  // Fallback demo user
+  return {
+    uid: 'user-' + Date.now(),
+    email,
+    displayName: displayName || email.split('@')[0],
+  };
 }
 
 /**
  * Sign in existing user with Email and Password.
  */
-export async function signInWithEmail(email: string, password: string): Promise<FirebaseUser | null> {
-  if (!isFirebaseConfigured || !auth) {
-    return null;
+export async function signInWithEmail(
+  email: string,
+  password: string
+): Promise<{ uid: string; email: string; displayName?: string } | null> {
+  if (isSupabaseConfigured) {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    });
+    if (error) throw error;
+    if (data.user) {
+      return {
+        uid: data.user.id,
+        email: data.user.email || email,
+        displayName: data.user.user_metadata?.full_name || data.user.user_metadata?.name || email.split('@')[0],
+      };
+    }
   }
-  const userCredential = await signInWithEmailAndPassword(auth, email.trim(), password);
-  return userCredential.user;
+
+  if (isFirebaseConfigured && auth) {
+    const userCredential = await signInWithEmailAndPassword(auth, email.trim(), password);
+    return {
+      uid: userCredential.user.uid,
+      email: userCredential.user.email || email,
+      displayName: userCredential.user.displayName || email.split('@')[0],
+    };
+  }
+
+  return {
+    uid: 'user-demo',
+    email,
+    displayName: email.split('@')[0],
+  };
 }
 
 /**
  * Sign in or sign up with Google popup.
  */
-export async function signInWithGoogle(): Promise<FirebaseUser | null> {
-  if (!isFirebaseConfigured || !auth || !googleProvider) {
-    throw new Error('Google Sign-in requires Firebase credentials. Please configure VITE_FIREBASE_API_KEY or use 1-Click Demo Profiles.');
+export async function signInWithGoogle(): Promise<{ uid: string; email: string; displayName?: string } | null> {
+  if (isSupabaseConfigured) {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/dashboard`,
+      },
+    });
+    if (error) throw error;
+    return null; // Will redirect via OAuth
   }
-  const userCredential = await signInWithPopup(auth, googleProvider);
-  return userCredential.user;
+
+  if (isFirebaseConfigured && auth && googleProvider) {
+    const userCredential = await signInWithPopup(auth, googleProvider);
+    return {
+      uid: userCredential.user.uid,
+      email: userCredential.user.email || '',
+      displayName: userCredential.user.displayName || 'Google User',
+    };
+  }
+
+  throw new Error('Google Sign-in requires configured Auth providers.');
 }
 
 /**
  * Send password reset email.
  */
 export async function sendPasswordReset(email: string): Promise<void> {
-  if (!isFirebaseConfigured || !auth) {
-    return; // gracefully resolve in demo mode
+  if (isSupabaseConfigured) {
+    await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${window.location.origin}/dashboard`,
+    });
+    return;
   }
-  await sendPasswordResetEmail(auth, email.trim());
+  if (isFirebaseConfigured && auth) {
+    await sendPasswordResetEmail(auth, email.trim());
+  }
 }
 
 /**
  * Sign out current authenticated user.
  */
 export async function signOutUser(): Promise<void> {
+  if (isSupabaseConfigured) {
+    await supabase.auth.signOut();
+  }
   if (isFirebaseConfigured && auth) {
     await signOut(auth);
   }

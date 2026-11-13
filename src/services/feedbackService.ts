@@ -14,6 +14,12 @@ import {
   increment,
 } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
+import { isSupabaseConfigured } from '../lib/supabase';
+import {
+  submitFeedbackToSupabase,
+  recordGoogleClickInSupabase,
+  getFeedbackByBusinessFromSupabase,
+} from './supabaseService';
 import {
   FeedbackItem,
   FeedbackSubmissionInput,
@@ -437,7 +443,14 @@ export async function submitFeedback(input: FeedbackSubmissionInput): Promise<Fe
 
   let generatedId = `fb_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 
-  if (db) {
+  if (isSupabaseConfigured) {
+    try {
+      const sbFeedback = await submitFeedbackToSupabase(input);
+      generatedId = sbFeedback.id;
+    } catch (err) {
+      console.warn('Supabase feedback submission error:', err);
+    }
+  } else if (db) {
     try {
       const colRef = collection(db, 'feedback');
       const docRef = await addDoc(colRef, {
@@ -534,7 +547,9 @@ export async function recordGoogleReviewClick(
 
   let clickId = `clk_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
 
-  if (db) {
+  if (isSupabaseConfigured) {
+    recordGoogleClickInSupabase(businessId, feedbackId).catch(console.warn);
+  } else if (db) {
     try {
       const colRef = collection(db, 'reviewClicks');
       const docRef = await addDoc(colRef, {
@@ -629,6 +644,18 @@ export async function getFeedbackByBusiness(
   }
 
   const localItems = getLocalFeedback(businessId);
+
+  if (isSupabaseConfigured) {
+    try {
+      const sbItems = await getFeedbackByBusinessFromSupabase(businessId);
+      if (sbItems && sbItems.length > 0) {
+        saveLocalFeedback(sbItems, businessId);
+        return maxDocs ? sbItems.slice(0, maxDocs) : sbItems;
+      }
+    } catch (e) {
+      console.warn('Error fetching feedback from Supabase:', e);
+    }
+  }
 
   if (!db) {
     if (localItems.length > 0) return localItems;

@@ -20,7 +20,13 @@ import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
-import { sendNegativeReviewAlert, sendSubscriptionSuccessEmail, sendEnterpriseLeadEmail } from '../../services/emailService';
+import {
+  sendNegativeReviewAlert,
+  sendSubscriptionSuccessEmail,
+  sendSubscriptionFailedEmail,
+  sendSubscriptionReminderEmail,
+  sendEnterpriseLeadEmail,
+} from '../../services/emailService';
 import { initiateRazorpayPayment } from '../../services/razorpayService';
 
 export const SettingsPage: React.FC = () => {
@@ -149,10 +155,13 @@ export const SettingsPage: React.FC = () => {
             'Subscription Updated'
           );
           sendSubscriptionSuccessEmail({
-            to: currentBusiness?.email || '',
-            ownerName: currentBusiness?.ownerName || '',
+            to: currentBusiness?.email || user?.email || '',
+            ownerName: currentBusiness?.ownerName || user?.name || '',
             planName: planDetails[plan].name,
             amount: plan === 'starter' ? '₹99' : '₹499',
+            paymentId,
+            subscriptionId,
+            businessName: currentBusiness?.businessName || currentBusiness?.name,
           }).catch(console.warn);
         } catch (error: any) {
           addToast('error', error.message || 'Failed to update plan', 'Update Error');
@@ -161,6 +170,14 @@ export const SettingsPage: React.FC = () => {
       onError: (errorMsg) => {
         setProcessingPayment(false);
         addToast('error', errorMsg, 'Payment Notice');
+        sendSubscriptionFailedEmail({
+          to: currentBusiness?.email || user?.email || '',
+          ownerName: currentBusiness?.ownerName || user?.name || '',
+          planName: planDetails[plan].name,
+          amount: plan === 'starter' ? '₹99' : '₹499',
+          reason: errorMsg,
+          businessName: currentBusiness?.businessName || currentBusiness?.name,
+        }).catch(console.warn);
       },
     });
   };

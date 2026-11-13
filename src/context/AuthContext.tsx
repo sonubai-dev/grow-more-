@@ -1,7 +1,15 @@
 import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { auth, isFirebaseConfigured } from '../lib/firebase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { User, Business } from '../types';
+import {
+  getBusinessesByOwnerFromSupabase,
+  createBusinessInSupabase,
+  updateBusinessInSupabase,
+  upsertProfileInSupabase,
+} from '../services/supabaseService';
+import { sendSubscriptionStartedEmail } from '../services/emailService';
 
 import {
   signUpWithEmail,
@@ -86,12 +94,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const fetchPromise = (async () => {
       setBusinessLoading(true);
       try {
+        if (isSupabaseConfigured) {
+          const supabaseBiz = await getBusinessesByOwnerFromSupabase(userId);
+          if (supabaseBiz && supabaseBiz.length > 0) {
+            setUserBusinesses(supabaseBiz);
+            setCurrentBusiness(supabaseBiz[0]);
+            try {
+              localStorage.setItem(LOCAL_STORAGE_BIZ_KEY, JSON.stringify(supabaseBiz[0]));
+            } catch {}
+            return supabaseBiz[0];
+          }
+        }
+
         if (isFirebaseConfigured) {
           const allBiz = await getBusinessesByOwnerId(userId, userId);
           setUserBusinesses(allBiz || []);
           
           if (allBiz && allBiz.length > 0) {
-            // Check if there's a previously selected business in cache
             let selectedBiz = allBiz[0];
             const cached = localStorage.getItem(LOCAL_STORAGE_BIZ_KEY);
             if (cached) {
@@ -141,7 +160,73 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // Safe session initialization
   useEffect(() => {
-    if (isFirebaseConfigured && auth) {
+    let unsubscribed = false;
+
+    if (isSupabaseConfigured) {
+      // 1. Get initial Supabase session
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (unsubscribed) return;
+        if (session?.user) {
+          const email = session.user.email || '';
+          const displayName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || email.split('@')[0];
+          const adminEmailsStr = import.meta.env.VITE_ADMIN_EMAILS || 'admin@zellonai.online,ssdd747346@gmail.com';
+          const adminEmails = adminEmailsStr.split(',').map((e: string) => e.trim().toLowerCase());
+          const isAdmin = adminEmails.includes(email.toLowerCase());
+
+          // Ensure profile exists in profiles table
+          upsertProfileInSupabase(session.user.id, email, displayName, isAdmin ? 'admin' : 'business_owner').catch(console.warn);
+
+          const appUser: User = {
+            id: session.user.id,
+            email,
+            name: displayName,
+            role: isAdmin ? 'admin' : 'business',
+            avatarUrl: session.user.user_metadata?.avatar_url,
+          };
+          setUser(appUser);
+          if (!isAdmin) {
+            loadUserBusiness(session.user.id, email);
+          }
+        }
+        setLoading(false);
+      });
+
+      // 2. Subscribe to auth changes
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+        if (unsubscribed) return;
+        if (session?.user) {
+          const email = session.user.email || '';
+          const displayName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || email.split('@')[0];
+          const adminEmailsStr = import.meta.env.VITE_ADMIN_EMAILS || 'admin@zellonai.online,ssdd747346@gmail.com';
+          const adminEmails = adminEmailsStr.split(',').map((e: string) => e.trim().toLowerCase());
+          const isAdmin = adminEmails.includes(email.toLowerCase());
+
+          // Ensure profile exists in profiles table
+          upsertProfileInSupabase(session.user.id, email, displayName, isAdmin ? 'admin' : 'business_owner').catch(console.warn);
+
+          const appUser: User = {
+            id: session.user.id,
+            email,
+            name: displayName,
+            role: isAdmin ? 'admin' : 'business',
+            avatarUrl: session.user.user_metadata?.avatar_url,
+          };
+          setUser(appUser);
+          if (!isAdmin) {
+            await loadUserBusiness(session.user.id, email);
+          }
+        } else {
+          setUser(null);
+          setCurrentBusiness(null);
+        }
+        setLoading(false);
+      });
+
+      return () => {
+        unsubscribed = true;
+        subscription.unsubscribe();
+      };
+    } else if (isFirebaseConfigured && auth) {
       try {
         const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
           setFirebaseUser(fbUser);
@@ -149,7 +234,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             const email = fbUser.email || '';
             const displayName = fbUser.displayName || email.split('@')[0] || 'User';
             
-            // Securely verify admin authorization via Firebase Custom Claims & Firestore /users document
             const isVerifiedAdmin = await verifyUserAdminRole(fbUser.uid);
 
             const appUser: User = {
@@ -179,8 +263,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setLoading(false);
       }
     } else {
-      // Firebase not configured
-      console.warn('Firebase is not configured. Authentication is disabled.');
       setLoading(false);
     }
   }, []);
@@ -217,7 +299,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
     }
 
-    if (!isFirebaseConfigured || !auth) {
+    if (!isSupabaseConfigured && (!isFirebaseConfigured || !auth)) {
       throw new Error('Sign up is currently unavailable. Please check system configuration.');
     }
 
@@ -228,22 +310,26 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       throw new Error('Sign up failed: Missing UID.');
     }
 
-    // Initialize user record in Firestore with non-admin role
-    await setUserRoleInFirestore(uid, email, 'business', resolvedName);
+    if (isSupabaseConfigured) {
+      await upsertProfileInSupabase(uid, email, resolvedName, 'business_owner');
+    } else if (isFirebaseConfigured) {
+      // Initialize user record in Firestore with non-admin role
+      await setUserRoleInFirestore(uid, email, 'business', resolvedName);
+    }
 
     const appUser: User = {
       id: uid,
       email: email,
       name: resolvedName,
       role: 'business',
-      avatarUrl: createdUser?.photoURL || undefined,
+      avatarUrl: undefined,
     };
     setUser(appUser);
     setCurrentBusiness(null); // Triggers onboarding
   };
 
   const login = async (email: string, password: string) => {
-    if (!isFirebaseConfigured || !auth) {
+    if (!isSupabaseConfigured && (!isFirebaseConfigured || !auth)) {
       throw new Error('Authentication is currently unavailable. Please check system configuration.');
     }
     const loggedInUser = await signInWithEmail(email, password);
@@ -254,40 +340,55 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       throw new Error('Authentication failed: Missing UID.');
     }
     
-    const isVerifiedAdmin = await verifyUserAdminRole(uid);
+    const adminEmailsStr = import.meta.env.VITE_ADMIN_EMAILS || 'admin@zellonai.online,ssdd747346@gmail.com';
+    const adminEmails = adminEmailsStr.split(',').map((e: string) => e.trim().toLowerCase());
+    const isVerifiedAdmin = adminEmails.includes((loggedInUser?.email || email).toLowerCase()) || (isFirebaseConfigured ? await verifyUserAdminRole(uid) : false);
+
+    if (isSupabaseConfigured) {
+      await upsertProfileInSupabase(uid, loggedInUser?.email || email, displayName, isVerifiedAdmin ? 'admin' : 'business_owner');
+    }
 
     const appUser: User = {
       id: uid,
       email: loggedInUser?.email || email,
       name: displayName,
       role: isVerifiedAdmin ? 'admin' : 'business',
-      avatarUrl: loggedInUser?.photoURL || undefined,
+      avatarUrl: undefined,
     };
     setUser(appUser);
 
     if (!isVerifiedAdmin) {
-      await loadUserBusiness(uid, loggedInUser.email || email);
+      await loadUserBusiness(uid, loggedInUser?.email || email);
     } else {
       setCurrentBusiness(null);
     }
   };
 
   const loginWithGoogle = async () => {
-    if (!isFirebaseConfigured || !auth) {
+    if (!isSupabaseConfigured && (!isFirebaseConfigured || !auth)) {
       throw new Error('Google Sign-in is currently unavailable.');
     }
     const gUser = await signInWithGoogle();
-    if (!gUser) throw new Error('Google Sign-in failed');
+    if (!gUser) {
+      // For Supabase OAuth, it redirects to the provider so nothing further is needed here
+      return;
+    }
     const email = gUser.email || '';
     const name = gUser.displayName || email.split('@')[0] || 'Google User';
-    const isVerifiedAdmin = await verifyUserAdminRole(gUser.uid);
+    const adminEmailsStr = import.meta.env.VITE_ADMIN_EMAILS || 'admin@zellonai.online,ssdd747346@gmail.com';
+    const adminEmails = adminEmailsStr.split(',').map((e: string) => e.trim().toLowerCase());
+    const isVerifiedAdmin = adminEmails.includes(email.toLowerCase()) || (isFirebaseConfigured ? await verifyUserAdminRole(gUser.uid) : false);
+
+    if (isSupabaseConfigured) {
+      await upsertProfileInSupabase(gUser.uid, email, name, isVerifiedAdmin ? 'admin' : 'business_owner');
+    }
 
     const appUser: User = {
       id: gUser.uid,
       email: email,
       name: name,
       role: isVerifiedAdmin ? 'admin' : 'business',
-      avatarUrl: gUser.photoURL || undefined,
+      avatarUrl: undefined,
     };
 
     setUser(appUser);
@@ -327,14 +428,33 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const createBusiness = async (input: Omit<CreateBusinessInput, 'ownerId'>): Promise<Business> => {
     if (!user) throw new AppError('You must be signed in to create a business profile.', 401, 'UNAUTHORIZED');
-    const newBiz = await createBusinessProfile({
-      ...input,
-      ownerId: user.id,
-    });
+    let newBiz: Business;
+    if (isSupabaseConfigured) {
+      newBiz = await createBusinessInSupabase({
+        ...input,
+        ownerId: user.id,
+      });
+    } else {
+      newBiz = await createBusinessProfile({
+        ...input,
+        ownerId: user.id,
+      });
+    }
     setCurrentBusiness(newBiz);
     try {
       localStorage.setItem(LOCAL_STORAGE_BIZ_KEY, JSON.stringify(newBiz));
     } catch {}
+
+    // Dispatch subscription started notification to user and admin
+    sendSubscriptionStartedEmail({
+      to: newBiz.contactEmail || user.email,
+      ownerName: newBiz.ownerName || user.name,
+      businessName: newBiz.name || newBiz.businessName,
+      planName: '₹499 Premium Plan',
+      amount: '₹499 / month',
+      trialDays: 14,
+    }).catch(console.warn);
+
     return newBiz;
   };
 
@@ -342,7 +462,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (!currentBusiness) throw new AppError('No active business profile to update.', 404, 'NOT_FOUND');
     if (!user) throw new AppError('You must be signed in to update your business profile.', 401, 'UNAUTHORIZED');
 
-    const updated = await updateBusinessProfile(currentBusiness.id, user.id, updates);
+    let updated: Business;
+    if (isSupabaseConfigured) {
+      updated = await updateBusinessInSupabase(currentBusiness.id, updates as any);
+    } else {
+      updated = await updateBusinessProfile(currentBusiness.id, user.id, updates);
+    }
     setCurrentBusiness(updated);
     try {
       localStorage.setItem(LOCAL_STORAGE_BIZ_KEY, JSON.stringify(updated));

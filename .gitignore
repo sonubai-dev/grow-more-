@@ -53,3 +53,5 @@ Thumbs.db
 *.tsbuildinfo
 coverage/
 .turbo/
+.vercel
+.env*

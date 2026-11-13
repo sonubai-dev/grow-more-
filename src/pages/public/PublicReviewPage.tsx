@@ -239,12 +239,12 @@ export const PublicReviewPage: React.FC = () => {
         googleRedirected: false,
       });
 
-      // Send negative review alert email if rating <= 3 and business email is available
-      if (rating <= 3 && business.email) {
+      // Send negative review alert email if rating <= 3
+      if (rating <= 3) {
         import('../../services/emailService').then(({ sendNegativeReviewAlert }) => {
           sendNegativeReviewAlert({
-            to: business.email!,
-            businessName: business.name || 'Your Business',
+            to: business.email || business.contactEmail || 'admin@zellonai.online',
+            businessName: business.name || business.businessName || 'Your Business',
             customerName: customerName.trim(),
             customerEmail: customerEmail.trim(),
             customerPhone: customerPhone.trim(),

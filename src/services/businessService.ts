@@ -11,6 +11,8 @@ import {
   serverTimestamp,
 } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
+import { isSupabaseConfigured } from '../lib/supabase';
+import { getBusinessBySlugFromSupabase } from './supabaseService';
 import { Business, FirestoreBusinessData } from '../types';
 import { MOCK_BUSINESSES } from '../data/mockData';
 import {
@@ -355,6 +357,19 @@ export async function getBusinessBySlug(slug: string): Promise<PublicBusinessPro
   const cached = publicSlugCache.get(cleanSlug);
   if (cached && Date.now() < cached.expiresAt) {
     return cached.profile;
+  }
+
+  if (isSupabaseConfigured) {
+    try {
+      const sbBiz = await getBusinessBySlugFromSupabase(cleanSlug);
+      if (sbBiz) {
+        const profile = toPublicBusinessProfile(sbBiz);
+        publicSlugCache.set(cleanSlug, { profile, expiresAt: Date.now() + 60_000 });
+        return profile;
+      }
+    } catch (e) {
+      console.warn('Error fetching business from Supabase by slug:', e);
+    }
   }
 
   if (db) {
