@@ -19,7 +19,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const resendApiKey = process.env.RESEND_API_KEY || '';
-  const fromEmail = process.env.RESEND_FROM_EMAIL || 'Vistaro <onboarding@resend.dev>';
+  const fromEmail = process.env.RESEND_FROM_EMAIL || 'ZellonAI Alerts <onboarding@resend.dev>';
 
   if (!resendApiKey) {
     return res.status(500).json({ error: 'RESEND_API_KEY is not configured in environment variables' });

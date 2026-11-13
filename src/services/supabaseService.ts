@@ -250,7 +250,7 @@ export async function getPlatformSettingsFromSupabase(): Promise<PlatformSetting
 
   if (!data) return null;
   return {
-    platformName: data.platform_name || 'Vistaro',
+    platformName: data.platform_name || 'ZellonAI',
     maintenanceMode: data.maintenance_mode || false,
     allowSignups: data.allow_signups ?? true,
     defaultTrialDays: data.default_trial_days || 14,

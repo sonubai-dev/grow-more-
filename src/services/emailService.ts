@@ -1,5 +1,5 @@
 /**
- * Vistaro Email Service
+ * ZellonAI Email Service
  * Powered by Resend (https://resend.com)
  * 
  * Includes:
@@ -111,7 +111,7 @@ function getAppOrigin(): string {
   if (typeof window !== 'undefined' && window.location.origin) {
     return window.location.origin;
   }
-  return 'https://vistaro-five.vercel.app';
+  return 'https://ZellonAI-five.vercel.app';
 }
 
 /**
@@ -181,14 +181,14 @@ export async function sendWelcomeEmail(params: WelcomeEmailParams): Promise<{ su
       <body>
         <div class="container">
           <div class="header">
-            <h1>Welcome to Vistaro! 🚀</h1>
+            <h1>Welcome to ZellonAI! 🚀</h1>
             <p>Your AI-Powered Google Review & Reputation Accelerator</p>
           </div>
           <div class="body">
             <span class="badge">₹499 Premium Plan — 14-Day Free Trial Active</span>
             <div class="greeting">Hi ${params.ownerName || 'Partner'},</div>
             <div class="intro">
-              Congratulations on setting up <strong>${params.businessName}</strong>! Vistaro helps you capture 5-star Google Reviews on autopilot while intercepting negative feedback privately before it harms your public reputation.
+              Congratulations on setting up <strong>${params.businessName}</strong>! ZellonAI helps you capture 5-star Google Reviews on autopilot while intercepting negative feedback privately before it harms your public reputation.
             </div>
 
             <div class="card">
@@ -197,7 +197,7 @@ export async function sendWelcomeEmail(params: WelcomeEmailParams): Promise<{ su
             </div>
 
             <div class="steps">
-              <div style="font-weight: 700; margin-bottom: 12px; color: #0f172a; font-size: 15px;">How Vistaro Protects & Boosts Your Rating:</div>
+              <div style="font-weight: 700; margin-bottom: 12px; color: #0f172a; font-size: 15px;">How ZellonAI Protects & Boosts Your Rating:</div>
               <div class="step"><strong>1. Share your link:</strong> Display your QR code stand or send your review link via WhatsApp or SMS to happy customers.</div>
               <div class="step"><strong>2. 5-Star Boost:</strong> Happy customers (4-5★) are directed directly to your official Google Reviews page.</div>
               <div class="step"><strong>3. Private Interception:</strong> Unhappy ratings (1-3★) are privately routed to your dashboard and emailed instantly to you so you can resolve them.</div>
@@ -208,7 +208,7 @@ export async function sendWelcomeEmail(params: WelcomeEmailParams): Promise<{ su
             </div>
           </div>
           <div class="footer">
-            &copy; ${new Date().getFullYear()} Vistaro Review Accelerator. All rights reserved.<br>
+            &copy; ${new Date().getFullYear()} ZellonAI Review Accelerator. All rights reserved.<br>
             Need help? Reply to this email or reach us at admin@zellonai.online
           </div>
         </div>
@@ -218,7 +218,7 @@ export async function sendWelcomeEmail(params: WelcomeEmailParams): Promise<{ su
 
   return sendEmail({
     to: params.to,
-    subject: `🚀 Welcome to Vistaro — ${params.businessName} is ready for 5-Star Reviews!`,
+    subject: `🚀 Welcome to ZellonAI — ${params.businessName} is ready for 5-Star Reviews!`,
     html,
   });
 }
@@ -261,7 +261,7 @@ export async function sendSubscriptionStartedEmail(params: SubscriptionStartedPa
         <div class="container">
           <div class="header">
             <h1>🎉 Subscription Started!</h1>
-            <p>Your Vistaro Premium Review Protection is Now Active</p>
+            <p>Your ZellonAI Premium Review Protection is Now Active</p>
           </div>
           <div class="body">
             <div class="greeting">Hi ${params.ownerName || 'there'},</div>
@@ -285,7 +285,7 @@ export async function sendSubscriptionStartedEmail(params: SubscriptionStartedPa
             </div>
           </div>
           <div class="footer">
-            &copy; ${new Date().getFullYear()} Vistaro. Support: admin@zellonai.online
+            &copy; ${new Date().getFullYear()} ZellonAI. Support: admin@zellonai.online
           </div>
         </div>
       </body>
@@ -298,7 +298,7 @@ export async function sendSubscriptionStartedEmail(params: SubscriptionStartedPa
 
   return sendEmail({
     to: allRecipients,
-    subject: `🎉 Subscription Started: ${plan} for ${params.businessName || 'Vistaro Account'}`,
+    subject: `🎉 Subscription Started: ${plan} for ${params.businessName || 'ZellonAI Account'}`,
     html,
   });
 }
@@ -341,7 +341,7 @@ export async function sendSubscriptionReminderEmail(params: SubscriptionReminder
         <div class="container">
           <div class="header">
             <h1>⏰ Subscription Reminder</h1>
-            <p>Your Vistaro Plan Renews Soon</p>
+            <p>Your ZellonAI Plan Renews Soon</p>
           </div>
           <div class="body">
             <div class="greeting">Hi ${params.ownerName || 'there'},</div>
@@ -373,7 +373,7 @@ export async function sendSubscriptionReminderEmail(params: SubscriptionReminder
             </div>
           </div>
           <div class="footer">
-            &copy; ${new Date().getFullYear()} Vistaro. Support: admin@zellonai.online
+            &copy; ${new Date().getFullYear()} ZellonAI. Support: admin@zellonai.online
           </div>
         </div>
       </body>
@@ -382,7 +382,7 @@ export async function sendSubscriptionReminderEmail(params: SubscriptionReminder
 
   return sendEmail({
     to: params.to,
-    subject: `⏰ Upcoming Renewal: Your Vistaro ${plan} Renews Soon`,
+    subject: `⏰ Upcoming Renewal: Your ZellonAI ${plan} Renews Soon`,
     html,
   });
 }
@@ -422,7 +422,7 @@ export async function sendSubscriptionSuccessEmail(params: SubscriptionSuccessPa
         <div class="container">
           <div class="header">
             <h1>🎉 Payment Confirmed!</h1>
-            <p>Thank you for choosing Vistaro</p>
+            <p>Thank you for choosing ZellonAI</p>
           </div>
           <div class="body">
             <div class="greeting">Hi ${params.ownerName || 'there'},</div>
@@ -456,11 +456,11 @@ export async function sendSubscriptionSuccessEmail(params: SubscriptionSuccessPa
             </div>
 
             <div class="btn-container">
-              <a href="${dashboardUrl}" class="btn">Open Vistaro Dashboard</a>
+              <a href="${dashboardUrl}" class="btn">Open ZellonAI Dashboard</a>
             </div>
           </div>
           <div class="footer">
-            &copy; ${new Date().getFullYear()} Vistaro. Support: admin@zellonai.online
+            &copy; ${new Date().getFullYear()} ZellonAI. Support: admin@zellonai.online
           </div>
         </div>
       </body>
@@ -541,7 +541,7 @@ export async function sendSubscriptionFailedEmail(params: SubscriptionFailedPara
             </div>
           </div>
           <div class="footer">
-            &copy; ${new Date().getFullYear()} Vistaro. Support: admin@zellonai.online
+            &copy; ${new Date().getFullYear()} ZellonAI. Support: admin@zellonai.online
           </div>
         </div>
       </body>
@@ -599,7 +599,7 @@ export async function sendNegativeReviewAlert(params: NegativeReviewAlertParams)
         <div class="container">
           <div class="header">
             <h1>⚠️ Attention: Negative Feedback Intercepted</h1>
-            <p>Vistaro protected your public Google rating by keeping this private.</p>
+            <p>ZellonAI protected your public Google rating by keeping this private.</p>
           </div>
           <div class="body">
             <span class="alert-badge">Intercepted Rating (1-3★)</span>
@@ -642,7 +642,7 @@ export async function sendNegativeReviewAlert(params: NegativeReviewAlertParams)
             </div>
           </div>
           <div class="footer">
-            &copy; ${new Date().getFullYear()} Vistaro Review Management System.
+            &copy; ${new Date().getFullYear()} ZellonAI Review Management System.
           </div>
         </div>
       </body>
@@ -689,7 +689,7 @@ export async function sendMarketingUpdate(params: MarketingUpdateParams): Promis
       <body>
         <div class="container">
           <div class="header">
-            <h1>Vistaro News & Updates 📣</h1>
+            <h1>ZellonAI News & Updates 📣</h1>
           </div>
           <div class="body">
             <div class="title">${params.title}</div>
@@ -699,7 +699,7 @@ export async function sendMarketingUpdate(params: MarketingUpdateParams): Promis
             </div>
           </div>
           <div class="footer">
-            &copy; ${new Date().getFullYear()} Vistaro. Support: admin@zellonai.online
+            &copy; ${new Date().getFullYear()} ZellonAI. Support: admin@zellonai.online
           </div>
         </div>
       </body>
