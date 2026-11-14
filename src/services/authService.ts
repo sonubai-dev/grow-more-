@@ -28,6 +28,9 @@ export function getAuthErrorMessage(error: unknown): string {
   if (message.includes('User already registered')) {
     return 'An account with this email already exists. Please sign in instead.';
   }
+  if (message.includes('Email not confirmed')) {
+    return 'Please check your email inbox and click the verification link to activate your account.';
+  }
 
   switch (code) {
     case 'auth/invalid-api-key':

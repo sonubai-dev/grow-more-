@@ -174,15 +174,45 @@ export async function submitFeedbackToSupabase(input: FeedbackSubmissionInput, b
     status: 'new',
   };
 
+  let feedback: FeedbackItem | null = null;
+
+  // 1. Try direct Supabase table insert
   const { data, error } = await supabase
     .from('feedback')
     .insert([payload])
     .select()
     .single();
 
-  if (error) throw new Error(error.message);
+  if (!error && data) {
+    feedback = mapSupabaseFeedback(data);
+  } else {
+    // 2. Fallback: Invoke Supabase Edge Function (submit-feedback) with Service Role privileges
+    try {
+      const { data: edgeData, error: edgeErr } = await supabase.functions.invoke('submit-feedback', {
+        body: {
+          businessId: input.businessId,
+          customerName: input.customerName || 'Anonymous Customer',
+          customerEmail: input.customerEmail || '',
+          customerPhone: input.customerPhone || '',
+          rating: input.rating,
+          comment: input.comment || '',
+          source: input.source || 'public_review_page',
+          googleRedirected: Boolean(input.googleRedirected),
+          businessName: business?.name || business?.businessName || 'Your Business',
+          ownerEmail: business?.contactEmail || business?.email || '',
+        },
+      });
 
-  const feedback = mapSupabaseFeedback(data);
+      if (!edgeErr && edgeData?.feedback) {
+        feedback = mapSupabaseFeedback(edgeData.feedback);
+      } else {
+        throw new Error(edgeErr?.message || error?.message || 'Feedback submission failed');
+      }
+    } catch (e: any) {
+      console.warn('Fallback Edge Function submit-feedback error:', e);
+      throw new Error(e.message || error?.message || 'Feedback submission failed');
+    }
+  }
 
   // If low rating (<= 3 stars) intercepted, trigger email notification for 499 Plan
   if (input.rating <= 3) {
@@ -217,15 +247,26 @@ export async function submitFeedbackToSupabase(input: FeedbackSubmissionInput, b
     }
   }
 
-  return feedback;
+  return feedback!;
 }
 
 // 6. Record Google Review Click
 export async function recordGoogleClickInSupabase(businessId: string, feedbackId?: string): Promise<void> {
-  await supabase.from('review_clicks').insert([{
+  const { error } = await supabase.from('review_clicks').insert([{
     business_id: businessId,
     feedback_id: feedbackId || null,
   }]);
+
+  if (error) {
+    // Fallback: Invoke Supabase Edge Function (submit-feedback)
+    await supabase.functions.invoke('submit-feedback', {
+      body: {
+        action: 'record_click',
+        businessId,
+        feedbackId: feedbackId || null,
+      },
+    }).catch(console.warn);
+  }
 }
 
 // 7. Fetch Feedback list for business
