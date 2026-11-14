@@ -19,7 +19,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
-  const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET || process.env.RAZORPAY_KEY_SECRET || 'WnDgteJiOgxUwoQYcgSKi6AV';
+  const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET || process.env.RAZORPAY_KEY_SECRET || '';
   const razorpaySignature = req.headers['x-razorpay-signature'] as string;
 
   const eventPayload = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
