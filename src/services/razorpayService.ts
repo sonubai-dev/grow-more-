@@ -63,8 +63,34 @@ export async function initiateRazorpayPayment(params: InitiatePaymentParams): Pr
     let paymentData: any = null;
     const planAmount = params.planId === 'starter' ? 99 : 499;
 
-    // 1. Primary: Use Supabase Edge Function (razorpay-order)
+    // 1. Primary: Use Supabase Edge Function (razorpay-subscription for recurring plans)
     if (isSupabaseConfigured) {
+      try {
+        const { data: subData, error: subErr } = await supabase.functions.invoke('razorpay-subscription', {
+          body: {
+            plan: params.planId,
+            businessId: params.businessId || 'default_biz',
+            customerEmail: params.customerEmail,
+            customerPhone: params.customerPhone,
+          },
+        });
+
+        if (!subErr && (subData?.subscriptionId || subData?.id)) {
+          paymentData = {
+            ...subData,
+            isSubscription: true,
+            id: subData.subscriptionId || subData.id,
+          };
+        } else if (subErr) {
+          console.warn('[Supabase Edge Function razorpay-subscription]:', subErr);
+        }
+      } catch (e) {
+        console.warn('Error invoking Supabase razorpay-subscription:', e);
+      }
+    }
+
+    // 2. Secondary: Fallback to Supabase Edge Function (razorpay-order) if subscription unavailable
+    if (!paymentData && isSupabaseConfigured) {
       try {
         const { data: edgeData, error: edgeErr } = await supabase.functions.invoke('razorpay-order', {
           body: {
@@ -75,7 +101,7 @@ export async function initiateRazorpayPayment(params: InitiatePaymentParams): Pr
         });
 
         if (!edgeErr && edgeData?.id) {
-          paymentData = edgeData;
+          paymentData = { ...edgeData, isSubscription: false };
         } else if (edgeErr) {
           console.warn('[Supabase Edge Function razorpay-order]:', edgeErr);
         }
@@ -84,23 +110,43 @@ export async function initiateRazorpayPayment(params: InitiatePaymentParams): Pr
       }
     }
 
-    // 2. Fallback: Use Vercel Serverless Function (/api/razorpay/create-order)
+    // 3. Fallback: Use Vercel Serverless Function (/api/razorpay/create-subscription or create-order)
     if (!paymentData) {
-      const orderRes = await fetch('/api/razorpay/create-order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          plan: params.planId,
-          amount: planAmount,
-          businessId: params.businessId || 'default_biz',
-        }),
-      });
+      try {
+        const subRes = await fetch('/api/razorpay/create-subscription', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            plan: params.planId,
+            businessId: params.businessId || 'default_biz',
+          }),
+        });
 
-      if (!orderRes.ok) {
-        const errData = await orderRes.json().catch(() => ({}));
-        throw new Error(errData.error || 'Failed to initialize Razorpay payment.');
+        if (subRes.ok) {
+          const subResData = await subRes.json();
+          paymentData = { ...subResData, isSubscription: true, id: subResData.id };
+        }
+      } catch (e) {
+        console.warn('Fallback create-subscription failed:', e);
       }
-      paymentData = await orderRes.json();
+
+      if (!paymentData) {
+        const orderRes = await fetch('/api/razorpay/create-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            plan: params.planId,
+            amount: planAmount,
+            businessId: params.businessId || 'default_biz',
+          }),
+        });
+
+        if (!orderRes.ok) {
+          const errData = await orderRes.json().catch(() => ({}));
+          throw new Error(errData.error || 'Failed to initialize Razorpay payment.');
+        }
+        paymentData = await orderRes.json();
+      }
     }
 
     const razorpayKey =
@@ -112,12 +158,12 @@ export async function initiateRazorpayPayment(params: InitiatePaymentParams): Pr
       throw new Error('Razorpay Key ID is missing. Please configure RAZORPAY_KEY_ID.');
     }
 
-    // 3. Open Razorpay Checkout Modal
+    // 4. Open Razorpay Checkout Modal
     const options: RazorpayOptions = {
       key: razorpayKey,
-      order_id: paymentData.id,
+      ...(paymentData.isSubscription ? { subscription_id: paymentData.id } : { order_id: paymentData.id }),
       name: 'ZellonAI',
-      description: `${params.planName} — Review Accelerator`,
+      description: `${params.planName} — Monthly Subscription`,
       prefill: {
         name: params.customerName || '',
         email: params.customerEmail || '',
@@ -135,12 +181,13 @@ export async function initiateRazorpayPayment(params: InitiatePaymentParams): Pr
         try {
           let verified = false;
 
-          // 4. Verify signature via Supabase Edge Function (razorpay-verify)
+          // 5. Verify signature via Supabase Edge Function (razorpay-verify)
           if (isSupabaseConfigured) {
             try {
               const { data: vData, error: vErr } = await supabase.functions.invoke('razorpay-verify', {
                 body: {
                   razorpay_order_id: paymentResponse.razorpay_order_id,
+                  razorpay_subscription_id: paymentResponse.razorpay_subscription_id || (paymentData.isSubscription ? paymentData.id : undefined),
                   razorpay_payment_id: paymentResponse.razorpay_payment_id,
                   razorpay_signature: paymentResponse.razorpay_signature,
                   businessId: params.businessId,
@@ -162,14 +209,26 @@ export async function initiateRazorpayPayment(params: InitiatePaymentParams): Pr
 
           // Fallback verification via Vercel serverless function
           if (!verified) {
-            const verifyRes = await fetch('/api/razorpay/verify-payment', {
+            const isSub = Boolean(paymentResponse.razorpay_subscription_id || paymentData.isSubscription);
+            const verifyEndpoint = isSub
+              ? '/api/razorpay/verify-subscription'
+              : '/api/razorpay/verify-payment';
+            const verifyPayload = isSub
+              ? {
+                  razorpay_subscription_id: paymentResponse.razorpay_subscription_id || paymentData.id,
+                  razorpay_payment_id: paymentResponse.razorpay_payment_id,
+                  razorpay_signature: paymentResponse.razorpay_signature,
+                }
+              : {
+                  razorpay_order_id: paymentResponse.razorpay_order_id,
+                  razorpay_payment_id: paymentResponse.razorpay_payment_id,
+                  razorpay_signature: paymentResponse.razorpay_signature,
+                };
+
+            const verifyRes = await fetch(verifyEndpoint, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                razorpay_order_id: paymentResponse.razorpay_order_id,
-                razorpay_payment_id: paymentResponse.razorpay_payment_id,
-                razorpay_signature: paymentResponse.razorpay_signature,
-              }),
+              body: JSON.stringify(verifyPayload),
             });
             const verifyData = await verifyRes.json();
             if (verifyRes.ok && verifyData.success) {
@@ -183,7 +242,7 @@ export async function initiateRazorpayPayment(params: InitiatePaymentParams): Pr
           if (verified) {
             params.onSuccess(
               paymentResponse.razorpay_payment_id,
-              paymentResponse.razorpay_order_id || 'order_success'
+              paymentResponse.razorpay_subscription_id || paymentResponse.razorpay_order_id || 'payment_success'
             );
           }
         } catch (err: any) {
