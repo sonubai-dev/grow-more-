@@ -48,7 +48,7 @@ export const TermsOfServicePage: React.FC = () => {
             1. Acceptance of Terms
           </h2>
           <p>
-            These Terms of Service (&quot;Terms&quot;, &quot;Agreement&quot;) constitute a legally binding agreement entered into by and between ZellonAI (&quot;ZellonAI&quot;, &quot;Company&quot;, &quot;we&quot;, &quot;our&quot;, or &quot;us&quot;) and the legal entity or individual creating an account or subscribing to the Service (&quot;Subscriber&quot;, &quot;Business&quot;, &quot;you&quot;, or &quot;your&quot;).
+            These Terms of Service (&quot;Terms&quot;, &quot;Agreement&quot;) constitute a legally binding agreement entered into by and between Solita Solutions, developer and operator of ZellonAI (&quot;ZellonAI&quot;, &quot;Company&quot;, &quot;we&quot;, &quot;our&quot;, or &quot;us&quot;), and the legal entity or individual creating an account or subscribing to the Service (&quot;Subscriber&quot;, &quot;Business&quot;, &quot;you&quot;, or &quot;your&quot;).
           </p>
           <p>
             By creating an account, clicking &quot;Start Free Trial&quot;, submitting payment, or otherwise accessing or using the ZellonAI platform, you represent that you have the legal authority to bind the Subscriber to this Agreement. If you do not agree to these Terms, you must not access or use the Service.
@@ -234,8 +234,22 @@ export const TermsOfServicePage: React.FC = () => {
             14. Governing Law & Dispute Resolution
           </h2>
           <p>
-            This Agreement shall be governed by and construed in accordance with the laws of the State of Delaware, United States, without regard to its conflict of law principles. Any dispute or controversy arising under this Agreement shall be resolved through confidential, binding arbitration conducted by the American Arbitration Association (AAA) in Wilmington, Delaware.
+            This Agreement shall be governed by and construed in accordance with the laws of India, without regard to its conflict of law principles. Any dispute arising under this Agreement shall be subject to the exclusive jurisdiction of the competent courts in Gaya, Bihar, India.
           </p>
+        </section>
+
+        {/* Section 15 */}
+        <section id="company-verification" className="space-y-3">
+          <h2 className="text-xl sm:text-2xl font-bold text-slate-900 border-b border-slate-200 pb-2">
+            15. Operating Entity, Developer & Support Information
+          </h2>
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 text-sm space-y-2">
+            <p className="text-slate-800"><strong>Company Name:</strong> Solita Solutions</p>
+            <p className="text-slate-800"><strong>Operating Location:</strong> Gaya, Bihar 824232, India</p>
+            <p className="text-slate-800"><strong>Support Email:</strong> <a href="mailto:help.solita@gmail.com" className="text-indigo-600 font-medium hover:underline">help.solita@gmail.com</a></p>
+            <p className="text-slate-800"><strong>WhatsApp / Phone:</strong> <a href="https://wa.me/919341718066" target="_blank" rel="noopener noreferrer" className="text-emerald-600 font-medium hover:underline">+91 9341718066</a></p>
+            <p className="text-slate-800"><strong>Developer & Author:</strong> Solita Solutions</p>
+          </div>
         </section>
 
       </div>

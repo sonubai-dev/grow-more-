@@ -292,12 +292,13 @@ export const PrivacyPolicyPage: React.FC = () => {
           <p>
             For questions, notices, or concerns regarding our privacy practices or to communicate with our appointed Data Protection Officer (DPO), please reach out to:
           </p>
-          <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 text-sm space-y-1">
-            <p><strong>ZellonAI Platform Legal & Privacy Department</strong></p>
-            <p>Email: <a href="mailto:privacy@ZellonAI.com" className="text-indigo-600 hover:underline">privacy@ZellonAI.com</a></p>
-            <p>Support: <a href="mailto:support@ZellonAI.com" className="text-indigo-600 hover:underline">support@ZellonAI.com</a></p>
-            <p>Security Team: <a href="mailto:security@ZellonAI.com" className="text-indigo-600 hover:underline">security@ZellonAI.com</a></p>
-            <p className="text-xs text-slate-500 pt-2">Corporation Registered in Delaware, United States.</p>
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 text-sm space-y-2">
+            <p className="font-semibold text-slate-900">Operating Entity &amp; Developer:</p>
+            <p className="text-slate-800"><strong>Company:</strong> Solita Solutions</p>
+            <p className="text-slate-800"><strong>Location:</strong> Gaya, Bihar 824232, India</p>
+            <p className="text-slate-800"><strong>Customer Support:</strong> <a href="mailto:help.solita@gmail.com" className="text-indigo-600 font-medium hover:underline">help.solita@gmail.com</a></p>
+            <p className="text-slate-800"><strong>WhatsApp / Phone Support:</strong> <a href="https://wa.me/919341718066" target="_blank" rel="noopener noreferrer" className="text-emerald-600 font-medium hover:underline">+91 9341718066</a></p>
+            <p className="text-xs text-slate-500 pt-2 border-t border-slate-200">Official developer and operational legal entity for ZellonAI SaaS platform.</p>
           </div>
         </section>
 

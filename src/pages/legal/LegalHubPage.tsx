@@ -170,31 +170,40 @@ export const LegalHubPage: React.FC = () => {
         {/* Contact and Direct Help Channels */}
         <section className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 space-y-6">
           <h2 className="text-xl font-bold text-slate-900">
-            Dedicated Regulatory & Legal Contacts
+            Business Verification &amp; Dedicated Help Channels
           </h2>
           
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 text-xs">
+            <div className="p-4 bg-indigo-50/60 border border-indigo-200 rounded-xl space-y-1.5">
+              <strong className="text-indigo-950 block text-sm">Operating Entity &amp; Author</strong>
+              <p className="text-slate-700 font-semibold">Solita Solutions</p>
+              <p className="text-slate-600">Gaya, Bihar 824232, India</p>
+              <a href="https://wa.me/919341718066" target="_blank" rel="noopener noreferrer" className="text-emerald-600 font-bold hover:underline block pt-1">
+                WhatsApp: +91 9341718066
+              </a>
+            </div>
+
             <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5">
-              <strong className="text-slate-900 block text-sm">Privacy & GDPR Rights</strong>
+              <strong className="text-slate-900 block text-sm">Customer &amp; Technical Support</strong>
+              <p className="text-slate-600">Official support and onboarding helpdesk.</p>
+              <a href="mailto:help.solita@gmail.com" className="text-indigo-600 font-bold hover:underline block pt-1">
+                help.solita@gmail.com
+              </a>
+            </div>
+
+            <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5">
+              <strong className="text-slate-900 block text-sm">Privacy &amp; GDPR Rights</strong>
               <p className="text-slate-600">For data subject access, erasure, or rectification requests.</p>
-              <a href="mailto:privacy@ZellonAI.com" className="text-indigo-600 font-bold hover:underline block pt-1">
-                privacy@ZellonAI.com
+              <a href="mailto:help.solita@gmail.com" className="text-indigo-600 font-bold hover:underline block pt-1">
+                help.solita@gmail.com
               </a>
             </div>
 
             <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5">
-              <strong className="text-slate-900 block text-sm">Legal & Contracts</strong>
-              <p className="text-slate-600">For enterprise MSA negotiation, sub-processor inquiries, and signed DPAs.</p>
-              <a href="mailto:compliance@ZellonAI.com" className="text-indigo-600 font-bold hover:underline block pt-1">
-                compliance@ZellonAI.com
-              </a>
-            </div>
-
-            <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5">
-              <strong className="text-slate-900 block text-sm">Security & Vulnerabilities</strong>
-              <p className="text-slate-600">For coordinated security disclosure and incident response.</p>
-              <a href="mailto:security@ZellonAI.com" className="text-indigo-600 font-bold hover:underline block pt-1">
-                security@ZellonAI.com
+              <strong className="text-slate-900 block text-sm">Security &amp; Vulnerabilities</strong>
+              <p className="text-slate-600">For coordinated security disclosure and response.</p>
+              <a href="mailto:help.solita@gmail.com" className="text-indigo-600 font-bold hover:underline block pt-1">
+                help.solita@gmail.com
               </a>
             </div>
           </div>
