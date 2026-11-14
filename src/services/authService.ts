@@ -31,6 +31,12 @@ export function getAuthErrorMessage(error: unknown): string {
   if (message.includes('Email not confirmed')) {
     return 'Please check your email inbox and click the verification link to activate your account.';
   }
+  if (message.toLowerCase().includes('rate limit') || message.includes('over_email_send_rate_limit')) {
+    return 'Supabase email rate limit reached. Please disable "Confirm email" in Supabase Authentication settings to allow instant signups, or wait a few minutes.';
+  }
+  if (message.toLowerCase().includes('provider is not enabled')) {
+    return 'Google Sign-in is not yet enabled in Supabase Authentication -> Providers -> Google.';
+  }
 
   switch (code) {
     case 'auth/invalid-api-key':
