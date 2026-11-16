@@ -9,7 +9,8 @@
     "start": "node server.js",
     "preview": "vite preview",
     "clean": "rm -rf dist",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "test:10x": "tsx scripts/verify-10x-suite.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
