@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Sparkles, Building2, User, Mail, Lock, ArrowRight, AlertCircle } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -10,11 +10,15 @@ import { getAuthErrorMessage } from '../../services/authService';
 import { sendWelcomeEmail } from '../../services/emailService';
 
 export const SignupPage: React.FC = () => {
-  const [businessName, setBusinessName] = useState('');
+  const [searchParams] = useSearchParams();
+  const initialBusiness = searchParams.get('business') || '';
+  const initialCategory = searchParams.get('category') || 'Healthcare & Dental';
+
+  const [businessName, setBusinessName] = useState(initialBusiness);
   const [ownerName, setOwnerName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [category, setCategory] = useState('Healthcare & Dental');
+  const [category, setCategory] = useState(initialCategory);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);

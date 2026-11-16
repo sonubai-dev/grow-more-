@@ -29,6 +29,10 @@ export const Navbar: React.FC = () => {
 
           {/* Desktop Nav Links - Clean, Simple, Essential Only */}
           <nav className="hidden md:flex items-center gap-7 text-sm font-medium text-slate-600">
+            <a href="/#interactive-simulator" className="text-indigo-600 font-semibold hover:text-indigo-700 transition-colors flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
+              <span>Live Simulator</span>
+            </a>
             <a href="/#how-it-works" className="hover:text-indigo-600 transition-colors">How It Works</a>
             <a href="/#features" className="hover:text-indigo-600 transition-colors">Features</a>
             <a href="/#pricing" className="hover:text-indigo-600 transition-colors">Pricing</a>
@@ -85,6 +89,14 @@ export const Navbar: React.FC = () => {
       {mobileMenuOpen && (
         <div id="mobile-nav-drawer" className="md:hidden border-b border-slate-200 bg-white px-4 pt-2 pb-6 space-y-4 animate-in slide-in-from-top-2 duration-150">
           <div className="flex flex-col space-y-2 pt-2 text-sm font-medium text-slate-700">
+            <a
+              href="/#interactive-simulator"
+              onClick={() => setMobileMenuOpen(false)}
+              className="px-3 py-2 rounded-lg bg-indigo-50 text-indigo-700 font-semibold transition-colors flex items-center gap-2"
+            >
+              <Sparkles className="w-4 h-4 text-indigo-600" />
+              <span>Live Simulator</span>
+            </a>
             <a
               href="/#how-it-works"
               onClick={() => setMobileMenuOpen(false)}

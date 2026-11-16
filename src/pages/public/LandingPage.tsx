@@ -26,6 +26,7 @@ import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Navbar } from '../../components/layout/Navbar';
 import { Footer } from '../../components/layout/Footer';
+import { InteractiveReviewSandbox } from '../../components/public/InteractiveReviewSandbox';
 
 export const LandingPage: React.FC = () => {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
@@ -186,9 +187,9 @@ export const LandingPage: React.FC = () => {
                   Start Free 14-Day Trial
                 </Button>
               </Link>
-              <a href="https://g.page/r/CaN_yK2UD5qJEBI/review" target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto">
-                <Button id="hero-cta-demo" variant="outline" size="lg" className="w-full sm:w-auto" leftIcon={<Star className="w-4 h-4 text-amber-500 fill-amber-500" />}>
-                  Try Live Review Page
+              <a href="#interactive-simulator" className="w-full sm:w-auto">
+                <Button id="hero-cta-demo" variant="outline" size="lg" className="w-full sm:w-auto" leftIcon={<Sparkles className="w-4 h-4 text-indigo-600" />}>
+                  Try Live Simulator
                 </Button>
               </a>
             </div>
@@ -254,6 +255,9 @@ export const LandingPage: React.FC = () => {
           </div>
         </div>
       </section>
+
+      {/* Interactive Try-Before-Signup Sandbox */}
+      <InteractiveReviewSandbox />
 
       {/* How It Works Section */}
       <section id="how-it-works" className="py-20 bg-slate-50 border-b border-slate-200">
