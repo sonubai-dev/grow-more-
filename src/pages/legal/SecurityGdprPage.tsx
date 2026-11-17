@@ -195,7 +195,7 @@ export const SecurityGdprPage: React.FC = () => {
               <span className="text-indigo-900/80">Available to all active ZellonAI Starter, Growth, and Enterprise subscribers.</span>
             </div>
             <a
-              href="mailto:dpa@ZellonAI.com?subject=ZellonAI%20DPA%20Request"
+              href="mailto:help.solita@gmail.com?subject=ZellonAI%20DPA%20Request"
               className="inline-flex items-center gap-2 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl shrink-0 transition-colors shadow-xs"
             >
               <Download className="w-3.5 h-3.5" />
@@ -259,7 +259,7 @@ export const SecurityGdprPage: React.FC = () => {
           </p>
           <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl text-xs space-y-1">
             <div className="font-bold text-slate-900">ZellonAI Information Security Operations</div>
-            <div>Email: <a href="mailto:security@ZellonAI.com" className="text-indigo-600 font-semibold hover:underline">security@ZellonAI.com</a></div>
+            <div>Email: <a href="mailto:help.solita@gmail.com" className="text-indigo-600 font-semibold hover:underline">help.solita@gmail.com</a></div>
             <div className="text-slate-500 pt-1">
               Please include detailed reproduction steps, HTTP requests, and proof of concept. We commit to acknowledging reports within 24 hours.
             </div>

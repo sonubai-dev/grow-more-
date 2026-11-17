@@ -192,6 +192,11 @@ export const LandingPage: React.FC = () => {
                   Try Live Simulator
                 </Button>
               </a>
+              <a href="https://g.page/r/CaN_yK2UD5qJEBM/review" target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto">
+                <Button id="hero-cta-live-review" variant="ghost" size="lg" className="w-full sm:w-auto text-slate-700 hover:text-indigo-600 hover:bg-slate-100" leftIcon={<Star className="w-4 h-4 text-amber-500 fill-amber-500" />}>
+                  Live Review Link
+                </Button>
+              </a>
             </div>
 
             {/* Micro reassurance badges */}
@@ -603,7 +608,7 @@ export const LandingPage: React.FC = () => {
                 Create Your Review Link Now
               </Button>
             </Link>
-            <a href="https://g.page/r/CaN_yK2UD5qJEBI/review" target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto">
+            <a href="https://g.page/r/CaN_yK2UD5qJEBM/review" target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto">
               <Button
                 id="cta-demo-review-btn"
                 variant="outline-white"

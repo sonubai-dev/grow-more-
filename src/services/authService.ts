@@ -160,27 +160,7 @@ export async function signInWithEmail(
  * Sign in or sign up with Google popup.
  */
 export async function signInWithGoogle(): Promise<{ uid: string; email: string; displayName?: string } | null> {
-  if (isSupabaseConfigured) {
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/dashboard`,
-      },
-    });
-    if (error) throw error;
-    return null; // Will redirect via OAuth
-  }
-
-  if (isFirebaseConfigured && auth && googleProvider) {
-    const userCredential = await signInWithPopup(auth, googleProvider);
-    return {
-      uid: userCredential.user.uid,
-      email: userCredential.user.email || '',
-      displayName: userCredential.user.displayName || 'Google User',
-    };
-  }
-
-  throw new Error('Google Sign-in requires configured Auth providers.');
+  throw new Error('Google Sign-in is disabled. Please use your Email and Password.');
 }
 
 /**

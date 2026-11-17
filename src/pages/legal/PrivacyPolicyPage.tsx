@@ -268,8 +268,8 @@ export const PrivacyPolicyPage: React.FC = () => {
           </div>
           <p className="text-sm">
             To submit a privacy request, please contact our Data Protection Office at{' '}
-            <a href="mailto:privacy@ZellonAI.com" className="text-indigo-600 font-semibold hover:underline">
-              privacy@ZellonAI.com
+            <a href="mailto:help.solita@gmail.com" className="text-indigo-600 font-semibold hover:underline">
+              help.solita@gmail.com
             </a>. Requests are fulfilled within 30 days without fee.
           </p>
         </section>

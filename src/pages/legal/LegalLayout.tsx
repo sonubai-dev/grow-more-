@@ -150,11 +150,11 @@ export const LegalLayout: React.FC<LegalLayoutProps> = ({
                 )}
               </button>
               <a
-                href="mailto:compliance@ZellonAI.com"
+                href="mailto:help.solita@gmail.com"
                 className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-indigo-300 bg-indigo-950/60 hover:bg-indigo-900 border border-indigo-800 rounded-xl transition-colors shadow-sm"
               >
                 <Mail className="w-3.5 h-3.5" />
-                <span>Contact Legal</span>
+                <span>Contact Support</span>
               </a>
             </div>
           </div>
@@ -238,10 +238,10 @@ export const LegalLayout: React.FC<LegalLayoutProps> = ({
               </p>
               <div className="pt-1">
                 <a
-                  href="mailto:compliance@ZellonAI.com"
+                  href="mailto:help.solita@gmail.com"
                   className="inline-flex items-center justify-center w-full px-3 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-colors shadow-xs"
                 >
-                  compliance@ZellonAI.com
+                  help.solita@gmail.com
                 </a>
               </div>
               <p className="text-[10px] text-slate-400 text-center">

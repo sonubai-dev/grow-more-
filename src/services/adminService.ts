@@ -33,7 +33,7 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
   allowSignups: true,
   defaultTrialDays: 14,
   googleSyncInterval: 15,
-  supportEmail: 'support@ZellonAI.com',
+  supportEmail: 'help.solita@gmail.com',
   defaultThresholdRating: 4,
   requireEmailVerification: false,
   updatedAt: new Date().toISOString(),

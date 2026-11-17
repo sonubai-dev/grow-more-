@@ -22,18 +22,46 @@ interface PresetBusiness {
   name: string;
   category: string;
   icon: string;
+  googleReviewUrl?: string;
 }
 
 const PRESET_BUSINESSES: PresetBusiness[] = [
-  { name: 'Apex Dental Care', category: 'Healthcare & Dental', icon: '🏥' },
-  { name: 'The Roast Cafe', category: 'Restaurant & Dining', icon: '☕' },
-  { name: 'Aura Unisex Salon', category: 'Beauty & Wellness', icon: '💇' },
-  { name: 'Prime Auto Works', category: 'Automotive & Detailing', icon: '🔧' },
+  {
+    name: 'Solita Solutions',
+    category: 'Software & IT Solutions',
+    icon: '⚡',
+    googleReviewUrl: 'https://g.page/r/CaN_yK2UD5qJEBM/review',
+  },
+  {
+    name: 'Apex Dental Care',
+    category: 'Healthcare & Dental',
+    icon: '🏥',
+    googleReviewUrl: 'https://g.page/r/CaN_yK2UD5qJEBM/review',
+  },
+  {
+    name: 'The Roast Cafe',
+    category: 'Restaurant & Dining',
+    icon: '☕',
+    googleReviewUrl: 'https://g.page/r/CaN_yK2UD5qJEBM/review',
+  },
+  {
+    name: 'Aura Unisex Salon',
+    category: 'Beauty & Wellness',
+    icon: '💇',
+    googleReviewUrl: 'https://g.page/r/CaN_yK2UD5qJEBM/review',
+  },
+  {
+    name: 'Prime Auto Works',
+    category: 'Automotive & Detailing',
+    icon: '🔧',
+    googleReviewUrl: 'https://g.page/r/CaN_yK2UD5qJEBM/review',
+  },
 ];
 
 export const InteractiveReviewSandbox: React.FC = () => {
-  const [businessName, setBusinessName] = useState('Apex Dental Care');
-  const [selectedCategory, setSelectedCategory] = useState('Healthcare & Dental');
+  const [businessName, setBusinessName] = useState('Solita Solutions');
+  const [selectedCategory, setSelectedCategory] = useState('Software & IT Solutions');
+  const [googleReviewUrl, setGoogleReviewUrl] = useState('https://g.page/r/CaN_yK2UD5qJEBM/review');
   const [rating, setRating] = useState<number>(5);
   const [hoverRating, setHoverRating] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<'phone' | 'stand'>('phone');
@@ -132,6 +160,9 @@ export const InteractiveReviewSandbox: React.FC = () => {
                       onClick={() => {
                         setBusinessName(preset.name);
                         setSelectedCategory(preset.category);
+                        if (preset.googleReviewUrl) {
+                          setGoogleReviewUrl(preset.googleReviewUrl);
+                        }
                         setSimulatedGoogleRedirect(false);
                         setPrivateFeedbackSent(false);
                       }}
@@ -401,18 +432,20 @@ export const InteractiveReviewSandbox: React.FC = () => {
                               </div>
                             </div>
 
-                            <button
-                              type="button"
+                            <a
+                              href={googleReviewUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
                               onClick={() => setSimulatedGoogleRedirect(true)}
-                              className="w-full py-2.5 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-colors"
+                              className="w-full py-2.5 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-colors cursor-pointer"
                             >
                               <span>Continue to Google Reviews</span>
                               <ExternalLink className="w-3.5 h-3.5" />
-                            </button>
+                            </a>
 
                             {simulatedGoogleRedirect && (
                               <p className="text-[10px] text-emerald-700 font-medium text-center animate-in fade-in">
-                                ✓ Opens Google Maps review form with 5 stars pre-selected!
+                                ✓ Opens your Google Review page in a new tab with 5 stars!
                               </p>
                             )}
                           </div>

@@ -77,7 +77,7 @@ export const TermsOfServicePage: React.FC = () => {
             <li><strong>Accuracy of Registration:</strong> Subscriber agrees to provide accurate, current, and complete business information, including legal entity name, location address, and authorized contact email.</li>
             <li><strong>Credential Confidentiality:</strong> Subscriber is solely responsible for maintaining the confidentiality of administrative login credentials and multi-factor authentication tokens.</li>
             <li><strong>Authorized Personnel:</strong> Subscriber is liable for all activities, feedback resolutions, or administrative settings changes conducted through authorized team member seats.</li>
-            <li><strong>Notification of Compromise:</strong> Subscriber must immediately notify ZellonAI at <a href="mailto:security@ZellonAI.com" className="text-indigo-600 hover:underline">security@ZellonAI.com</a> upon suspecting any unauthorized breach or access to their account.</li>
+            <li><strong>Notification of Compromise:</strong> Subscriber must immediately notify ZellonAI at <a href="mailto:help.solita@gmail.com" className="text-indigo-600 hover:underline">help.solita@gmail.com</a> upon suspecting any unauthorized breach or access to their account.</li>
           </ul>
         </section>
 
