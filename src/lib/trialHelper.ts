@@ -16,13 +16,50 @@ export interface TrialStatus {
 const TRIAL_DAYS = 14;
 
 /**
+ * Checks whether a business has a confirmed, active paid subscription via Razorpay
+ */
+export function hasActiveSubscription(business: Business | null | undefined): boolean {
+  if (!business) return false;
+  return Boolean(
+    business.subscriptionId &&
+    (business.status === 'active' || business.status === 'subscribed' || (business as any)?.planStatus === 'active')
+  );
+}
+
+/**
+ * Format plan name cleanly for UI display
+ * Maps legacy 'premium_499' or undefined to 'Starter (₹99)'
+ */
+export function formatPlanName(plan?: string): string {
+  if (!plan) return 'Starter (₹99)';
+  const lower = plan.toLowerCase();
+  if (lower.includes('growth')) return 'Growth (₹499)';
+  if (lower.includes('enterprise')) return 'Enterprise (Coming Soon)';
+  return 'Starter (₹99)';
+}
+
+/**
+ * Get maximum allowed business locations by plan
+ * Starter: 1 location
+ * Growth: up to 3 locations (multiple businesses)
+ * Enterprise: Coming Soon (or custom)
+ */
+export function getPlanLocationLimit(plan?: string): number {
+  if (!plan) return 1;
+  const lower = plan.toLowerCase();
+  if (lower.includes('growth')) return 3;
+  if (lower.includes('enterprise')) return 20;
+  return 1;
+}
+
+/**
  * Calculates current trial progress and remaining days
  */
 export function calculateTrialStatus(business: Business | null | undefined): TrialStatus {
   const now = Date.now();
 
   // If business has paid active subscription
-  if (business?.status === 'active' && business?.subscriptionId) {
+  if (hasActiveSubscription(business)) {
     return {
       isTrial: false,
       isActiveSubscription: true,
@@ -58,10 +95,10 @@ export function calculateTrialStatus(business: Business | null | undefined): Tri
   const daysElapsed = Math.min(TRIAL_DAYS, Math.max(0, TRIAL_DAYS - daysRemaining));
   const dayNumber = Math.min(TRIAL_DAYS, daysElapsed + 1);
   const progressPercent = Math.min(100, Math.max(0, Math.round((daysElapsed / TRIAL_DAYS) * 100)));
-  const isExpired = daysRemaining === 0 && business?.status !== 'active';
+  const isExpired = daysRemaining === 0;
 
   return {
-    isTrial: !isExpired && business?.status !== 'active',
+    isTrial: !isExpired,
     isActiveSubscription: false,
     isExpired,
     daysTotal: TRIAL_DAYS,

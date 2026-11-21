@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { NavLink, Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -18,7 +18,8 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { calculateTrialStatus } from '../../lib/trialHelper';
+import { calculateTrialStatus, formatPlanName, getPlanLocationLimit } from '../../lib/trialHelper';
+import { PlanUpgradeModal } from '../dashboard/PlanUpgradeModal';
 
 export interface SidebarProps {
   isAdmin?: boolean;
@@ -28,15 +29,10 @@ export interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({ isAdmin = false, onCloseMobile }) => {
   const { user, currentBusiness, userBusinesses = [], switchBusiness, logout } = useAuth();
   const location = useLocation();
+  const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
 
-  const getPlanLimit = (planName?: string) => {
-    if (!planName) return 1;
-    const lower = planName.toLowerCase();
-    if (lower.includes('enterprise')) return 20;
-    if (lower.includes('growth')) return 3;
-    return 1;
-  };
-  const canAddBusiness = userBusinesses.length < getPlanLimit(currentBusiness?.plan);
+  const planLimit = getPlanLocationLimit(currentBusiness?.plan);
+  const canAddBusiness = userBusinesses.length < planLimit;
   const trialStatus = calculateTrialStatus(currentBusiness);
 
   const businessNavItems = [
@@ -85,7 +81,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isAdmin = false, onCloseMobile
             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
               Businesses
             </span>
-            {canAddBusiness && (
+            {canAddBusiness ? (
               <Link 
                 to="/dashboard/add-business"
                 onClick={onCloseMobile}
@@ -94,6 +90,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ isAdmin = false, onCloseMobile
               >
                 <Plus className="w-3 h-3" /> Add
               </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setUpgradeModalOpen(true)}
+                className="text-[10px] font-bold text-amber-400 hover:text-amber-300 flex items-center gap-0.5 cursor-pointer"
+                title="Upgrade plan to add multiple business locations"
+              >
+                <Plus className="w-3 h-3" /> Add
+              </button>
             )}
           </div>
           
@@ -118,7 +123,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isAdmin = false, onCloseMobile
                       <div className="w-3.5 h-3.5 rounded-full border border-slate-600 shrink-0" />
                     )}
                   </div>
-                  <span className="text-[10px] text-slate-400 truncate capitalize">{biz.plan || 'Starter'} Plan</span>
+                  <span className="text-[10px] text-slate-400 truncate">{formatPlanName(biz.plan)}</span>
                 </button>
               );
             })}
@@ -144,9 +149,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ isAdmin = false, onCloseMobile
               </div>
               <div className="flex items-center justify-between text-[10px] text-slate-400">
                 <span>Free Trial (₹99/mo)</span>
-                <Link to="/dashboard/settings" className="text-indigo-300 hover:text-white font-semibold underline">
+                <button
+                  type="button"
+                  onClick={() => setUpgradeModalOpen(true)}
+                  className="text-indigo-300 hover:text-white font-semibold underline cursor-pointer"
+                >
                   Activate Plan
-                </Link>
+                </button>
               </div>
             </div>
           )}
@@ -161,12 +170,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ isAdmin = false, onCloseMobile
               <p className="text-[10px] text-slate-300 leading-tight mb-2">
                 Subscribe to ₹99/mo Starter Plan to keep your public review portal active.
               </p>
-              <Link
-                to="/dashboard/settings"
-                className="block text-center w-full py-1.5 px-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold transition-colors"
+              <button
+                type="button"
+                onClick={() => setUpgradeModalOpen(true)}
+                className="block text-center w-full py-1.5 px-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold transition-colors cursor-pointer"
               >
                 Activate ₹99/mo →
-              </Link>
+              </button>
             </div>
           )}
 
@@ -177,15 +187,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ isAdmin = false, onCloseMobile
                 <CheckCircle2 className="w-3 h-3 text-emerald-400" />
                 <span>Subscription Active</span>
               </span>
-              <span className="text-[10px] text-slate-400 capitalize">{currentBusiness?.plan || 'Starter'}</span>
+              <span className="text-[10px] text-emerald-400 font-semibold">{formatPlanName(currentBusiness?.plan)}</span>
             </div>
           )}
 
-          <div className="px-3 pt-2 text-[10px] text-slate-500 flex justify-between items-center">
-            <span>{userBusinesses.length} / {getPlanLimit(currentBusiness?.plan)} location{getPlanLimit(currentBusiness?.plan) > 1 ? 's' : ''}</span>
-            {!canAddBusiness && (
-              <Link to="/dashboard/settings" className="text-indigo-400 hover:underline">Upgrade</Link>
-            )}
+          <div className="px-3 pt-2 text-[10px] text-slate-400 flex justify-between items-center">
+            <span>{userBusinesses.length} / {planLimit} location{planLimit > 1 ? 's' : ''}</span>
+            <button
+              type="button"
+              onClick={() => setUpgradeModalOpen(true)}
+              className="text-indigo-400 hover:text-indigo-300 font-semibold underline cursor-pointer transition-colors"
+            >
+              Upgrade
+            </button>
           </div>
 
           <div className="px-3 mt-2 pt-2 border-t border-slate-800 flex items-center justify-between">
@@ -274,6 +288,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ isAdmin = false, onCloseMobile
           </button>
         </div>
       </div>
+
+      {/* Plan Upgrade & Multi-Location Unlock Modal */}
+      <PlanUpgradeModal
+        isOpen={upgradeModalOpen}
+        onClose={() => setUpgradeModalOpen(false)}
+        currentBusiness={currentBusiness}
+      />
     </aside>
   );
 };

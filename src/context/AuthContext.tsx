@@ -65,6 +65,22 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const LOCAL_STORAGE_USER_KEY = 'reviewflow_auth_user';
 const LOCAL_STORAGE_BIZ_KEY = 'reviewflow_auth_biz';
 
+function normalizeBusinessPlan(biz: Business): Business {
+  if (!biz) return biz;
+  const hasPaid = Boolean(biz.subscriptionId && (biz.status === 'active' || biz.status === 'subscribed'));
+  let plan = biz.plan;
+  if (!hasPaid) {
+    plan = 'starter';
+  } else if (plan === 'premium_499') {
+    plan = 'growth';
+  }
+  return {
+    ...biz,
+    plan: plan || 'starter',
+    status: hasPaid ? 'active' : 'trial',
+  };
+}
+
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [user, setUser] = useState<User | null>(null);
@@ -78,9 +94,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const switchBusiness = (businessId: string) => {
     const biz = userBusinesses.find(b => b.id === businessId);
     if (biz) {
-      setCurrentBusiness(biz);
+      const normalized = normalizeBusinessPlan(biz);
+      setCurrentBusiness(normalized);
       try {
-        localStorage.setItem(LOCAL_STORAGE_BIZ_KEY, JSON.stringify(biz));
+        localStorage.setItem(LOCAL_STORAGE_BIZ_KEY, JSON.stringify(normalized));
       } catch {}
     }
   };
@@ -97,25 +114,27 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (isSupabaseConfigured) {
           const supabaseBiz = await getBusinessesByOwnerFromSupabase(userId);
           if (supabaseBiz && supabaseBiz.length > 0) {
-            setUserBusinesses(supabaseBiz);
-            setCurrentBusiness(supabaseBiz[0]);
+            const normalizedList = supabaseBiz.map(normalizeBusinessPlan);
+            setUserBusinesses(normalizedList);
+            setCurrentBusiness(normalizedList[0]);
             try {
-              localStorage.setItem(LOCAL_STORAGE_BIZ_KEY, JSON.stringify(supabaseBiz[0]));
+              localStorage.setItem(LOCAL_STORAGE_BIZ_KEY, JSON.stringify(normalizedList[0]));
             } catch {}
-            return supabaseBiz[0];
+            return normalizedList[0];
           }
         }
 
         if (isFirebaseConfigured) {
           const allBiz = await getBusinessesByOwnerId(userId, userId);
-          setUserBusinesses(allBiz || []);
+          const normalizedList = (allBiz || []).map(normalizeBusinessPlan);
+          setUserBusinesses(normalizedList);
           
-          if (allBiz && allBiz.length > 0) {
-            let selectedBiz = allBiz[0];
+          if (normalizedList && normalizedList.length > 0) {
+            let selectedBiz = normalizedList[0];
             const cached = localStorage.getItem(LOCAL_STORAGE_BIZ_KEY);
             if (cached) {
-              const parsed: Business = JSON.parse(cached);
-              const found = allBiz.find(b => b.id === parsed.id);
+              const parsed: Business = normalizeBusinessPlan(JSON.parse(cached));
+              const found = normalizedList.find(b => b.id === parsed.id);
               if (found) {
                 selectedBiz = found;
               }
@@ -132,7 +151,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         // Check local cache if offline or no businesses
         const cached = localStorage.getItem(LOCAL_STORAGE_BIZ_KEY);
         if (cached) {
-          const parsed: Business = JSON.parse(cached);
+          const parsed: Business = normalizeBusinessPlan(JSON.parse(cached));
           if (parsed.ownerId === userId || parsed.contactEmail === email) {
             setCurrentBusiness(parsed);
             setUserBusinesses([parsed]);
@@ -440,12 +459,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         ownerId: user.id,
       });
     }
-    setCurrentBusiness(newBiz);
+    const normalizedBiz = normalizeBusinessPlan(newBiz);
+    setCurrentBusiness(normalizedBiz);
+    setUserBusinesses((prev) => [...prev.filter((b) => b.id !== normalizedBiz.id), normalizedBiz]);
     try {
-      localStorage.setItem(LOCAL_STORAGE_BIZ_KEY, JSON.stringify(newBiz));
+      localStorage.setItem(LOCAL_STORAGE_BIZ_KEY, JSON.stringify(normalizedBiz));
     } catch {}
 
-    return newBiz;
+    return normalizedBiz;
   };
 
   const updateBusiness = async (updates: UpdateBusinessInput): Promise<Business> => {

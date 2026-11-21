@@ -49,14 +49,17 @@ export const SettingsPage: React.FC = () => {
 
   React.useEffect(() => {
     if (currentBusiness?.plan) {
-      setCurrentPlan(currentBusiness.plan.toLowerCase() as 'starter' | 'growth' | 'enterprise');
+      const p = currentBusiness.plan.toLowerCase();
+      if (p.includes('growth')) setCurrentPlan('growth');
+      else if (p.includes('enterprise')) setCurrentPlan('enterprise');
+      else setCurrentPlan('starter');
     }
   }, [currentBusiness?.plan]);
 
   const planDetails = {
     starter: { name: 'ZellonAI Starter', price: '₹99 / month', locations: '1 Location' },
     growth: { name: 'ZellonAI Growth', price: '₹499 / month', locations: 'Up to 3 Locations' },
-    enterprise: { name: 'ZellonAI Enterprise', price: '₹1,499 / month', locations: 'Unlimited Locations' },
+    enterprise: { name: 'ZellonAI Enterprise', price: 'Custom (Coming Soon)', locations: 'Unlimited Locations' },
   };
 
   const trialStatus = calculateTrialStatus(currentBusiness);
@@ -131,6 +134,11 @@ export const SettingsPage: React.FC = () => {
 
     if (plan === 'enterprise') {
       setPlanModalOpen(false);
+      addToast(
+        'info',
+        'Enterprise Plan (Unlimited Locations) is Coming Soon! Currently you can use Starter (1 location) or upgrade to Growth (up to 3 locations).',
+        'Enterprise Coming Soon'
+      );
       setEnterpriseModalOpen(true);
       return;
     }
@@ -188,7 +196,7 @@ export const SettingsPage: React.FC = () => {
   const handleEnterpriseSubmit = async () => {
     setSendingEnterprise(true);
     await sendEnterpriseLeadEmail({
-      adminEmail: 'ssdd747346@gmail.com',
+      adminEmail: 'help.solita@gmail.com',
       customerName: currentBusiness?.ownerName || 'Unknown Owner',
       customerEmail: currentBusiness?.email || 'No email',
       customerPhone: currentBusiness?.phone || 'No phone',
@@ -411,12 +419,13 @@ export const SettingsPage: React.FC = () => {
             },
             {
               id: 'enterprise' as const,
-              name: 'Enterprise',
+              name: 'Enterprise (Coming Soon)',
               price: 'Custom',
-              desc: 'Unlimited Locations, multi-tenant portal, webhooks & priority SLA. Contact Sales.',
+              desc: 'Unlimited Locations, multi-tenant portal, webhooks & priority SLA. (Launching Soon)',
             },
           ].map((plan) => {
             const isSelected = currentPlan === plan.id;
+            const isEnterprise = plan.id === 'enterprise';
             return (
               <div
                 key={plan.id}
@@ -433,6 +442,11 @@ export const SettingsPage: React.FC = () => {
                     {isSelected && (
                       <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-600 text-white">
                         Current
+                      </span>
+                    )}
+                    {isEnterprise && (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                        Coming Soon
                       </span>
                     )}
                   </div>
