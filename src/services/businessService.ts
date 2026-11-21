@@ -200,7 +200,9 @@ export function mapDocToBusiness(id: string, data: any): Business {
     name: businessName,
     contactEmail: email,
     plan: data.plan || 'starter',
-    status: data.status || 'active',
+    status: data.status || 'trial',
+    trialEndsAt: data.trialEndsAt || (data.createdAt ? new Date(new Date(typeof data.createdAt?.toDate === 'function' ? data.createdAt.toDate().toISOString() : data.createdAt).getTime() + 14 * 24 * 60 * 60 * 1000).toISOString() : undefined),
+    subscriptionId: data.subscriptionId || undefined,
     stats: data.stats || {
       totalFeedback: 0,
       averageRating: 5,

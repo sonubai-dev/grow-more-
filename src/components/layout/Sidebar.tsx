@@ -13,9 +13,12 @@ import {
   LogOut,
   ChevronRight,
   Plus,
-  CheckCircle2
+  CheckCircle2,
+  Clock,
+  AlertTriangle,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { calculateTrialStatus } from '../../lib/trialHelper';
 
 export interface SidebarProps {
   isAdmin?: boolean;
@@ -34,6 +37,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isAdmin = false, onCloseMobile
     return 1;
   };
   const canAddBusiness = userBusinesses.length < getPlanLimit(currentBusiness?.plan);
+  const trialStatus = calculateTrialStatus(currentBusiness);
 
   const businessNavItems = [
     { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, exact: true },
@@ -120,12 +124,69 @@ export const Sidebar: React.FC<SidebarProps> = ({ isAdmin = false, onCloseMobile
             })}
           </div>
 
-          {!canAddBusiness && (
-            <div className="px-3 pt-1 text-[10px] text-slate-500 flex justify-between">
-              <span>{userBusinesses.length} / {getPlanLimit(currentBusiness?.plan)} limit reached</span>
-              <Link to="/dashboard/settings" className="text-indigo-400 hover:underline">Upgrade</Link>
+          {/* Dynamic 14-Day Free Trial Countdown Widget */}
+          {trialStatus.isTrial && (
+            <div className="mt-2.5 p-2.5 rounded-xl bg-indigo-950/70 border border-indigo-500/30 text-indigo-200">
+              <div className="flex items-center justify-between text-[11px] font-bold mb-1">
+                <span className="flex items-center gap-1 text-indigo-300">
+                  <Clock className="w-3 h-3 text-indigo-400" />
+                  <span>Day {trialStatus.dayNumber} of 14</span>
+                </span>
+                <span className="text-[10px] bg-indigo-500/30 px-1.5 py-0.5 rounded text-white font-mono font-bold">
+                  {trialStatus.daysRemaining}d left
+                </span>
+              </div>
+              <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden my-1.5">
+                <div
+                  className="bg-gradient-to-r from-indigo-500 to-emerald-400 h-full transition-all duration-300"
+                  style={{ width: `${Math.max(8, trialStatus.progressPercent)}%` }}
+                />
+              </div>
+              <div className="flex items-center justify-between text-[10px] text-slate-400">
+                <span>Free Trial (₹99/mo)</span>
+                <Link to="/dashboard/settings" className="text-indigo-300 hover:text-white font-semibold underline">
+                  Activate Plan
+                </Link>
+              </div>
             </div>
           )}
+
+          {/* Trial Expired Alert Widget */}
+          {trialStatus.isExpired && (
+            <div className="mt-2.5 p-2.5 rounded-xl bg-amber-950/70 border border-amber-500/40 text-amber-200">
+              <div className="flex items-center gap-1.5 text-[11px] font-bold text-amber-300 mb-1">
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span>14-Day Trial Expired</span>
+              </div>
+              <p className="text-[10px] text-slate-300 leading-tight mb-2">
+                Subscribe to ₹99/mo Starter Plan to keep your public review portal active.
+              </p>
+              <Link
+                to="/dashboard/settings"
+                className="block text-center w-full py-1.5 px-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold transition-colors"
+              >
+                Activate ₹99/mo →
+              </Link>
+            </div>
+          )}
+
+          {/* Active Paid Subscription Widget */}
+          {trialStatus.isActiveSubscription && (
+            <div className="mt-2 px-2.5 py-1.5 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-emerald-300 text-[11px] flex items-center justify-between font-medium">
+              <span className="flex items-center gap-1">
+                <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                <span>Subscription Active</span>
+              </span>
+              <span className="text-[10px] text-slate-400 capitalize">{currentBusiness?.plan || 'Starter'}</span>
+            </div>
+          )}
+
+          <div className="px-3 pt-2 text-[10px] text-slate-500 flex justify-between items-center">
+            <span>{userBusinesses.length} / {getPlanLimit(currentBusiness?.plan)} location{getPlanLimit(currentBusiness?.plan) > 1 ? 's' : ''}</span>
+            {!canAddBusiness && (
+              <Link to="/dashboard/settings" className="text-indigo-400 hover:underline">Upgrade</Link>
+            )}
+          </div>
 
           <div className="px-3 mt-2 pt-2 border-t border-slate-800 flex items-center justify-between">
             <Link

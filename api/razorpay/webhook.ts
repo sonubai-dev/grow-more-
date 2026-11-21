@@ -58,7 +58,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     
     // Resolve plan name from plan_id or notes
     const rawPlanId = subscription?.plan_id || notes.plan_id;
-    const plan = PLAN_MAP[rawPlanId] || notes.plan || 'growth';
+    const plan = PLAN_MAP[rawPlanId] || notes.plan || 'starter';
 
     if (supabaseServiceKey) {
       const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -91,6 +91,42 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         case 'subscription.updated':
           // Customer successfully paid / subscription is live
           await updateBusinessStatus('active', true, plan);
+
+          // Dispatch Subscription Activated email to customer via Resend
+          if (customerEmail && process.env.RESEND_API_KEY) {
+            try {
+              const resendApiKey = process.env.RESEND_API_KEY;
+              const fromEmail = process.env.RESEND_FROM_EMAIL || 'ZellonAI <onboarding@resend.dev>';
+              const planDisplay = plan === 'starter' ? '₹99 Starter Plan' : (plan === 'enterprise' ? 'Enterprise Plan' : '₹499 Growth Plan');
+              const amountDisplay = plan === 'starter' ? '₹99 / month' : (plan === 'enterprise' ? 'Custom' : '₹499 / month');
+
+              await fetch('https://api.resend.com/emails', {
+                method: 'POST',
+                headers: {
+                  Authorization: `Bearer ${resendApiKey}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  from: fromEmail,
+                  to: customerEmail,
+                  subject: `🎉 Subscription Activated: ${planDisplay} is now Live!`,
+                  html: `
+                    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px;">
+                      <h2 style="color: #4f46e5;">🎉 Subscription Activated!</h2>
+                      <p>Your subscription to <strong>${planDisplay}</strong> (${amountDisplay}) has been verified and is now live.</p>
+                      <p>Your Google 5-Star Review Funnel, QR stand gateway, and private negative review shielding are running 24/7 without interruption.</p>
+                      <div style="margin: 24px 0;">
+                        <a href="https://zellonai.online/dashboard" style="background: #4f46e5; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">Open Dashboard &rarr;</a>
+                      </div>
+                      <p style="font-size: 12px; color: #64748b;">Need help? Contact support at help.solita@gmail.com</p>
+                    </div>
+                  `,
+                }),
+              });
+            } catch (emailErr) {
+              console.warn('[Razorpay Webhook] Failed to send subscription email:', emailErr);
+            }
+          }
           break;
 
         case 'subscription.paused':

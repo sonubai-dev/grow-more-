@@ -28,6 +28,13 @@ export interface WelcomeEmailParams {
   slug: string;
 }
 
+export interface TrialExpiredEmailParams {
+  to: string;
+  ownerName: string;
+  businessName: string;
+  slug: string;
+}
+
 export interface SubscriptionStartedParams {
   to: string;
   ownerName: string;
@@ -185,7 +192,7 @@ export async function sendWelcomeEmail(params: WelcomeEmailParams): Promise<{ su
             <p>Your AI-Powered Google Review & Reputation Accelerator</p>
           </div>
           <div class="body">
-            <span class="badge">₹499 Premium Plan — 14-Day Free Trial Active</span>
+            <span class="badge">₹99 Starter Plan — 14-Day Free Trial Active</span>
             <div class="greeting">Hi ${params.ownerName || 'Partner'},</div>
             <div class="intro">
               Congratulations on setting up <strong>${params.businessName}</strong>! ZellonAI helps you capture 5-star Google Reviews on autopilot while intercepting negative feedback privately before it harms your public reputation.
@@ -209,7 +216,7 @@ export async function sendWelcomeEmail(params: WelcomeEmailParams): Promise<{ su
           </div>
           <div class="footer">
             &copy; ${new Date().getFullYear()} ZellonAI Review Accelerator. All rights reserved.<br>
-            Need help? Reply to this email or reach us at admin@zellonai.online
+            Need help? Reply to this email or reach us at help.solita@gmail.com
           </div>
         </div>
       </body>
@@ -229,8 +236,8 @@ export async function sendWelcomeEmail(params: WelcomeEmailParams): Promise<{ su
 export async function sendSubscriptionStartedEmail(params: SubscriptionStartedParams): Promise<{ success: boolean; id?: string; error?: string }> {
   const origin = getAppOrigin();
   const dashboardUrl = `${origin}/dashboard`;
-  const plan = params.planName || '₹499 Growth Plan';
-  const amount = params.amount || '₹499 / month';
+  const plan = params.planName || '₹99 Starter Plan';
+  const amount = params.amount || '₹99 / month';
 
   const html = `
     <!DOCTYPE html>
@@ -285,7 +292,7 @@ export async function sendSubscriptionStartedEmail(params: SubscriptionStartedPa
             </div>
           </div>
           <div class="footer">
-            &copy; ${new Date().getFullYear()} ZellonAI. Support: admin@zellonai.online
+            &copy; ${new Date().getFullYear()} ZellonAI. Support: help.solita@gmail.com
           </div>
         </div>
       </body>
@@ -304,13 +311,80 @@ export async function sendSubscriptionStartedEmail(params: SubscriptionStartedPa
 }
 
 // ==========================================
+// 2B. 14-DAY TRIAL EXPIRED NOTICE EMAIL
+// ==========================================
+export async function sendTrialExpiredEmail(params: TrialExpiredEmailParams): Promise<{ success: boolean; id?: string; error?: string }> {
+  const origin = getAppOrigin();
+  const upgradeUrl = `${origin}/dashboard/settings`;
+  const reviewUrl = `${origin}/r/${params.slug}`;
+
+  const html = `
+    <!DOCTYPE html>
+    <html lang="en">
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 0; color: #1e293b; }
+          .container { max-width: 600px; margin: 24px auto; background: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; }
+          .header { background: linear-gradient(135deg, #ea580c 0%, #f97316 100%); padding: 32px 24px; text-align: center; }
+          .header h1 { color: #ffffff; margin: 0; font-size: 24px; font-weight: 800; }
+          .header p { color: #ffedd5; margin: 8px 0 0 0; font-size: 14px; }
+          .body { padding: 32px 28px; }
+          .greeting { font-size: 18px; font-weight: 700; color: #0f172a; margin-bottom: 12px; }
+          .message { font-size: 15px; line-height: 1.6; color: #475569; margin-bottom: 24px; }
+          .alert-box { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 12px; padding: 20px; margin-bottom: 24px; }
+          .alert-title { font-size: 16px; font-weight: 800; color: #9a3412; margin-bottom: 6px; }
+          .btn-container { text-align: center; margin: 28px 0; }
+          .btn { display: inline-block; background: #ea580c; color: #ffffff !important; padding: 14px 30px; border-radius: 10px; font-weight: 700; font-size: 15px; text-decoration: none; box-shadow: 0 4px 10px rgba(234, 88, 12, 0.3); }
+          .footer { background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 18px; text-align: center; font-size: 12px; color: #94a3b8; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>⚠️ 14-Day Free Trial Ended</h1>
+            <p>Keep your Google review flow active for ${params.businessName}</p>
+          </div>
+          <div class="body">
+            <div class="greeting">Hi ${params.ownerName || 'Partner'},</div>
+            <div class="message">
+              Your 14-day free trial for <strong>${params.businessName}</strong> has completed. To ensure your public review portal continues routing 5-star reviews to Google Maps and shielding private negative feedback, please activate your plan.
+            </div>
+
+            <div class="alert-box">
+              <div class="alert-title">Starter Plan — ₹99 / month</div>
+              <p style="margin: 0; font-size: 14px; color: #c2410c;">
+                Continue with full 1-to-3 star shielding, 5-star Google review acceleration, QR stand support, and instant alerts.
+              </p>
+            </div>
+
+            <div class="btn-container">
+              <a href="${upgradeUrl}" class="btn">Activate ₹99/mo Starter Plan →</a>
+            </div>
+          </div>
+          <div class="footer">
+            &copy; ${new Date().getFullYear()} ZellonAI. Need assistance? Contact us at help.solita@gmail.com
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+
+  return sendEmail({
+    to: params.to,
+    subject: `⚠️ Action Required: 14-Day Free Trial Ended for ${params.businessName} — Activate ₹99 Plan`,
+    html,
+  });
+}
+
+// ==========================================
 // 3. SUBSCRIPTION REMINDER EMAIL
 // ==========================================
 export async function sendSubscriptionReminderEmail(params: SubscriptionReminderParams): Promise<{ success: boolean; id?: string; error?: string }> {
   const origin = getAppOrigin();
   const billingUrl = `${origin}/dashboard/settings`;
-  const plan = params.planName || '₹499 Growth Plan';
-  const amount = params.amount || '₹499 / month';
+  const plan = params.planName || '₹99 Starter Plan';
+  const amount = params.amount || '₹99 / month';
   const dateStr = params.renewalDate || 'in 3 days';
 
   const html = `
@@ -373,7 +447,7 @@ export async function sendSubscriptionReminderEmail(params: SubscriptionReminder
             </div>
           </div>
           <div class="footer">
-            &copy; ${new Date().getFullYear()} ZellonAI. Support: admin@zellonai.online
+            &copy; ${new Date().getFullYear()} ZellonAI. Support: help.solita@gmail.com
           </div>
         </div>
       </body>
@@ -460,7 +534,7 @@ export async function sendSubscriptionSuccessEmail(params: SubscriptionSuccessPa
             </div>
           </div>
           <div class="footer">
-            &copy; ${new Date().getFullYear()} ZellonAI. Support: admin@zellonai.online
+            &copy; ${new Date().getFullYear()} ZellonAI. Support: help.solita@gmail.com
           </div>
         </div>
       </body>
@@ -541,7 +615,7 @@ export async function sendSubscriptionFailedEmail(params: SubscriptionFailedPara
             </div>
           </div>
           <div class="footer">
-            &copy; ${new Date().getFullYear()} ZellonAI. Support: admin@zellonai.online
+            &copy; ${new Date().getFullYear()} ZellonAI. Support: help.solita@gmail.com
           </div>
         </div>
       </body>
@@ -699,7 +773,7 @@ export async function sendMarketingUpdate(params: MarketingUpdateParams): Promis
             </div>
           </div>
           <div class="footer">
-            &copy; ${new Date().getFullYear()} ZellonAI. Support: admin@zellonai.online
+            &copy; ${new Date().getFullYear()} ZellonAI. Support: help.solita@gmail.com
           </div>
         </div>
       </body>

@@ -26,7 +26,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   }
 
-  const { amount = 499, currency = 'INR', plan = 'growth', businessId } = req.body || {};
+  const { amount = 99, currency = 'INR', plan = 'starter', businessId } = req.body || {};
 
   try {
     const authString = Buffer.from(`${keyId}:${keySecret}`).toString('base64');

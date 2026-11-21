@@ -445,16 +445,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       localStorage.setItem(LOCAL_STORAGE_BIZ_KEY, JSON.stringify(newBiz));
     } catch {}
 
-    // Dispatch subscription started notification to user and admin
-    sendSubscriptionStartedEmail({
-      to: newBiz.contactEmail || user.email,
-      ownerName: newBiz.ownerName || user.name,
-      businessName: newBiz.name || newBiz.businessName,
-      planName: '₹499 Premium Plan',
-      amount: '₹499 / month',
-      trialDays: 14,
-    }).catch(console.warn);
-
     return newBiz;
   };
 

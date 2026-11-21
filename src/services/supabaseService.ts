@@ -41,8 +41,10 @@ export function mapSupabaseBusiness(row: any): Business {
     customSubheadline: row.custom_subheadline || '',
     thresholdRatingForGoogle: row.threshold_rating_for_google ?? 5,
     isActive: row.is_active ?? true,
-    plan: (row.plan || 'growth') as any,
-    status: (row.status || 'active') as any,
+    plan: (row.plan || 'starter') as any,
+    status: (row.status || 'trial') as any,
+    trialEndsAt: row.trial_ends_at || (row.created_at ? new Date(new Date(row.created_at).getTime() + 14 * 24 * 60 * 60 * 1000).toISOString() : undefined),
+    subscriptionId: row.subscription_id || undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -115,8 +117,8 @@ export async function createBusinessInSupabase(input: CreateBusinessInput): Prom
     google_review_url: input.googleReviewUrl || '',
     google_place_id: input.googlePlaceId || '',
     slug,
-    plan: input.plan || 'premium_499',
-    status: 'active',
+    plan: input.plan || 'starter',
+    status: 'trial',
     is_active: true,
   };
 
@@ -227,13 +229,13 @@ export async function submitFeedbackToSupabase(input: FeedbackSubmissionInput, b
           customerName: input.customerName,
           customerEmail: input.customerEmail,
           customerPhone: input.customerPhone,
-          plan: 'premium_499',
+          plan: business?.plan || 'starter',
         },
       }).catch((edgeErr) => console.warn('[EdgeFunction notify-low-rating]:', edgeErr));
 
       // 2. Also dispatch via Resend client service to ensure delivery to admin & owner
       sendNegativeReviewAlert({
-        to: business?.contactEmail || business?.email || 'admin@zellonai.online',
+        to: business?.contactEmail || business?.email || 'help.solita@gmail.com',
         businessName: business?.name || business?.businessName || 'Your Business',
         customerName: input.customerName,
         customerEmail: input.customerEmail,

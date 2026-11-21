@@ -32,6 +32,7 @@ import { DashboardMetricsGrid } from '../../components/dashboard/DashboardMetric
 import { DashboardCharts } from '../../components/dashboard/DashboardCharts';
 import { OnboardingEmptyState } from '../../components/dashboard/OnboardingEmptyState';
 import { DashboardHeader } from '../../components/dashboard/DashboardHeader';
+import { TrialCountdownBanner } from '../../components/dashboard/TrialCountdownBanner';
 import { RecentFeedbackTable } from '../../components/dashboard/RecentFeedbackTable';
 import { FeedbackDetailModal } from '../../components/dashboard/FeedbackDetailModal';
 import { QrStandModal } from '../../components/dashboard/QrStandModal';
@@ -236,6 +237,9 @@ export const DashboardOverview: React.FC = () => {
         onCopyLink={handleCopyLink}
         onOpenQrModal={() => setQrModalOpen(true)}
       />
+
+      {/* 14-Day Free Trial Live Countdown Banner */}
+      <TrialCountdownBanner business={currentBusiness} userEmail={user?.email} />
 
       {/* Date Filters & Live Sync Control Bar */}
       <div

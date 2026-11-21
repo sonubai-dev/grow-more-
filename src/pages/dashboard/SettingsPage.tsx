@@ -28,6 +28,7 @@ import {
   sendEnterpriseLeadEmail,
 } from '../../services/emailService';
 import { initiateRazorpayPayment } from '../../services/razorpayService';
+import { calculateTrialStatus } from '../../lib/trialHelper';
 
 export const SettingsPage: React.FC = () => {
   const { currentBusiness, user, updateBusiness } = useAuth();
@@ -57,6 +58,8 @@ export const SettingsPage: React.FC = () => {
     growth: { name: 'ZellonAI Growth', price: '₹499 / month', locations: 'Up to 3 Locations' },
     enterprise: { name: 'ZellonAI Enterprise', price: '₹1,499 / month', locations: 'Unlimited Locations' },
   };
+
+  const trialStatus = calculateTrialStatus(currentBusiness);
 
   const [teamMembers, setTeamMembers] = useState([
     { 
@@ -336,34 +339,48 @@ export const SettingsPage: React.FC = () => {
       <Card className="p-6 sm:p-8 space-y-4">
         <div className="flex items-center justify-between pb-4 border-b border-slate-100">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-emerald-50 text-emerald-700">
+            <div className={`p-2 rounded-xl ${trialStatus.isExpired ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700'}`}>
               <CreditCard className="w-5 h-5" />
             </div>
             <div>
               <h3 className="text-base font-bold text-slate-900">Current Subscription</h3>
-              <p className="text-xs text-slate-500">{planDetails[currentPlan].name}</p>
+              <p className="text-xs text-slate-500">{planDetails[currentPlan]?.name || 'ZellonAI Starter'}</p>
             </div>
           </div>
-          <Badge variant="success" size="md">Active</Badge>
+          <Badge variant={trialStatus.isActiveSubscription ? 'success' : (trialStatus.isExpired ? 'error' : 'warning')} size="md">
+            {trialStatus.isActiveSubscription ? 'Active Subscription' : (trialStatus.isExpired ? 'Trial Expired' : `${trialStatus.daysRemaining}d Trial Left`)}
+          </Badge>
         </div>
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
           <div>
-            <span className="text-2xl font-extrabold text-slate-900">{planDetails[currentPlan].price}</span>
-            <p className="text-xs text-slate-500 mt-0.5">{planDetails[currentPlan].locations} • Next billing date: September 15, 2026</p>
+            <span className="text-2xl font-extrabold text-slate-900">{planDetails[currentPlan]?.price || '₹99 / month'}</span>
+            <p className="text-xs text-slate-500 mt-0.5">
+              {planDetails[currentPlan]?.locations || '1 Location'} •{' '}
+              {trialStatus.isTrial
+                ? `14-Day Free Trial (Day ${trialStatus.dayNumber} of 14 • Ends on ${trialStatus.trialEndsDate.toLocaleDateString()})`
+                : (trialStatus.isExpired
+                  ? 'Trial expired. Please activate subscription to continue.'
+                  : `Active billing • Renews on ${trialStatus.trialEndsDate.toLocaleDateString()}`)}
+            </p>
           </div>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => addToast('info', 'Your payment method is active.', 'Billing Info')}
-            >
-              Manage Billing
-            </Button>
+          <div className="flex gap-2 flex-wrap">
+            {!trialStatus.isActiveSubscription && (
+              <Button
+                variant="primary"
+                size="sm"
+                className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold"
+                onClick={() => handleSelectPlan('starter')}
+                disabled={processingPayment}
+              >
+                {processingPayment ? 'Processing...' : 'Activate ₹99/mo Plan'}
+              </Button>
+            )}
             <Button
               variant="secondary"
               size="sm"
               onClick={() => setPlanModalOpen(true)}
+              disabled={processingPayment}
             >
               Change Plan
             </Button>

@@ -26,7 +26,9 @@ import {
   ArrowRight,
   Send,
   MessageSquare,
+  Clock,
 } from 'lucide-react';
+import { calculateTrialStatus } from '../../lib/trialHelper';
 import { ReviewTemplateGenerator } from '../../components/public/ReviewTemplateGenerator';
 
 export const PublicReviewPage: React.FC = () => {
@@ -412,6 +414,46 @@ export const PublicReviewPage: React.FC = () => {
               <Link to="/">
                 <Button variant="primary" className="w-full justify-center" size="md" leftIcon={<Home className="w-4 h-4" />}>
                   Return to ZellonAI Home
+                </Button>
+              </Link>
+            </div>
+          </Card>
+        </div>
+
+        <div className="text-center text-xs text-slate-400">
+          Powered by <Link to="/" className="text-indigo-600 hover:underline font-semibold">ZellonAI</Link>
+        </div>
+      </div>
+    );
+  }
+
+  // 14-Day Free Trial Expired View
+  const trialStatus = calculateTrialStatus(business);
+  if (trialStatus.isExpired) {
+    return (
+      <div id="business-trial-expired-page" className="min-h-screen bg-slate-100 flex flex-col justify-between py-12 px-4 sm:px-6">
+        <div className="w-full max-w-md mx-auto my-auto text-center">
+          <Card className="p-8 sm:p-10 bg-white border border-amber-200/90 shadow-xl rounded-3xl space-y-6">
+            <div className="w-20 h-20 rounded-3xl bg-amber-50 border-2 border-amber-200 text-amber-600 flex items-center justify-center mx-auto shadow-xs">
+              <Clock className="w-10 h-10" />
+            </div>
+
+            <div className="space-y-2">
+              <span className="inline-block px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-mono font-bold">
+                14-Day Free Trial Ended
+              </span>
+              <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
+                Review Portal Paused
+              </h1>
+              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                The 14-day free trial for <strong>{business.name || business.businessName}</strong> has completed. To keep collecting Google reviews and shielding negative feedback, please activate your ₹99/mo Starter Plan.
+              </p>
+            </div>
+
+            <div className="pt-2 flex flex-col gap-3">
+              <Link to="/login">
+                <Button variant="primary" className="w-full justify-center bg-indigo-600 hover:bg-indigo-500 font-bold" size="md">
+                  Owner Dashboard Login →
                 </Button>
               </Link>
             </div>

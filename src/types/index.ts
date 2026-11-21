@@ -39,6 +39,8 @@ export interface Business extends FirestoreBusinessData {
   contactEmail: string; // email alias
   plan?: 'starter' | 'growth' | 'enterprise';
   status?: 'active' | 'trial' | 'suspended';
+  trialEndsAt?: string;
+  subscriptionId?: string;
   stats?: {
     totalFeedback: number;
     averageRating: number;

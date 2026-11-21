@@ -26,7 +26,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const keyId = process.env.RAZORPAY_KEY_ID || process.env.VITE_RAZORPAY_KEY_ID || '';
   const keySecret = process.env.RAZORPAY_KEY_SECRET || '';
 
-  const { plan = 'growth', businessId } = req.body || {};
+  const { plan = 'starter', businessId } = req.body || {};
 
   if (!keyId || !keySecret) {
     return res.status(400).json({
@@ -35,7 +35,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const planId = RAZORPAY_PLANS[plan] || RAZORPAY_PLANS.growth;
+    const planId = RAZORPAY_PLANS[plan] || RAZORPAY_PLANS.starter;
 
     // 14 days free trial -> AutoPay starts after 14 days
     const trialDays = 14;
