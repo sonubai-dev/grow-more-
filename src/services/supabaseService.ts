@@ -42,12 +42,10 @@ export function mapSupabaseBusiness(row: any): Business {
     thresholdRatingForGoogle: row.threshold_rating_for_google ?? 5,
     isActive: row.is_active ?? true,
     plan: (() => {
-      const hasPaid = Boolean(row.subscription_id && (row.status === 'active' || row.status === 'subscribed'));
-      if (!hasPaid) return 'starter';
       if (row.plan === 'premium_499') return 'growth';
       return (row.plan || 'starter');
     })() as any,
-    status: Boolean(row.subscription_id && (row.status === 'active' || row.status === 'subscribed')) ? 'active' : 'trial',
+    status: (row.status === 'trial' ? 'trial' : (row.status || 'active')) as any,
     trialEndsAt: row.trial_ends_at || (row.created_at ? new Date(new Date(row.created_at).getTime() + 14 * 24 * 60 * 60 * 1000).toISOString() : undefined),
     subscriptionId: row.subscription_id || undefined,
     createdAt: row.created_at,

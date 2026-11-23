@@ -200,12 +200,10 @@ export function mapDocToBusiness(id: string, data: any): Business {
     name: businessName,
     contactEmail: email,
     plan: (() => {
-      const hasPaid = Boolean(data.subscriptionId && (data.status === 'active' || data.status === 'subscribed'));
-      if (!hasPaid) return 'starter';
       if (data.plan === 'premium_499') return 'growth';
       return (data.plan || 'starter');
     })(),
-    status: Boolean(data.subscriptionId && (data.status === 'active' || data.status === 'subscribed')) ? 'active' : 'trial',
+    status: data.status === 'trial' ? 'trial' : (data.status || 'active'),
     trialEndsAt: data.trialEndsAt || (data.createdAt ? new Date(new Date(typeof data.createdAt?.toDate === 'function' ? data.createdAt.toDate().toISOString() : data.createdAt).getTime() + 14 * 24 * 60 * 60 * 1000).toISOString() : undefined),
     subscriptionId: data.subscriptionId || undefined,
     stats: data.stats || {

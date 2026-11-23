@@ -67,17 +67,15 @@ const LOCAL_STORAGE_BIZ_KEY = 'reviewflow_auth_biz';
 
 function normalizeBusinessPlan(biz: Business): Business {
   if (!biz) return biz;
-  const hasPaid = Boolean(biz.subscriptionId && (biz.status === 'active' || biz.status === 'subscribed'));
+  const isTrial = biz.status === 'trial';
   let plan = biz.plan;
-  if (!hasPaid) {
-    plan = 'starter';
-  } else if (plan === 'premium_499') {
-    plan = 'growth';
+  if (plan === 'premium_499') {
+    plan = isTrial ? 'starter' : 'growth';
   }
   return {
     ...biz,
     plan: plan || 'starter',
-    status: hasPaid ? 'active' : 'trial',
+    status: isTrial ? 'trial' : (biz.status || 'active'),
   };
 }
 

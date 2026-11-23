@@ -20,9 +20,14 @@ const TRIAL_DAYS = 14;
  */
 export function hasActiveSubscription(business: Business | null | undefined): boolean {
   if (!business) return false;
+  // A business is active if status is explicitly 'active', 'subscribed', or has a verified subscriptionId
+  // Accounts on free evaluation have status: 'trial'
+  if (business.status === 'trial') return false;
   return Boolean(
-    business.subscriptionId &&
-    (business.status === 'active' || business.status === 'subscribed' || (business as any)?.planStatus === 'active')
+    business.status === 'active' ||
+    business.status === 'subscribed' ||
+    (business as any)?.planStatus === 'active' ||
+    business.subscriptionId
   );
 }
 

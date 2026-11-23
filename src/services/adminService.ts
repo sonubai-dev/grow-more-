@@ -12,6 +12,8 @@ import {
   serverTimestamp,
 } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { mapSupabaseBusiness, mapSupabaseFeedback } from './supabaseService';
 import {
   Business,
   FeedbackItem,
@@ -62,22 +64,63 @@ export function saveLocalAllBusinesses(businesses: Business[]) {
  * Check if the given user or current authenticated user is an authorized admin.
  * Securely verifies Firestore users collection and Firebase Auth token claims.
  */
-export async function verifyUserAdminRole(userId: string): Promise<boolean> {
+export async function verifyUserAdminRole(userId: string, userEmail?: string): Promise<boolean> {
   if (!userId) return false;
 
-  // 1. Fast check for bootstrap admin email via environment variables
+  const adminEmailsStr = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_ADMIN_EMAILS) || 'admin@zellonai.online,ssdd747346@gmail.com';
+  const adminEmails = adminEmailsStr.split(',').map((e: string) => e.trim().toLowerCase());
+
+  if (userEmail && adminEmails.includes(userEmail.toLowerCase())) {
+    return true;
+  }
+
+  // 1. Check Supabase session & Profiles table
+  if (isSupabaseConfigured) {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const currentEmail = session?.user?.email?.toLowerCase();
+      if (currentEmail && adminEmails.includes(currentEmail)) {
+        return true;
+      }
+      if (session?.user?.id === userId && currentEmail && adminEmails.includes(currentEmail)) {
+        return true;
+      }
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', userId)
+        .maybeSingle();
+      if (profile?.role === 'admin') {
+        return true;
+      }
+    } catch (e) {
+      console.warn('Error checking Supabase admin role:', e);
+    }
+  }
+
+  // 2. Fast check for bootstrap admin email via localStorage (in browser)
+  if (typeof window !== 'undefined') {
+    try {
+      const stored = localStorage.getItem('zellonai_user');
+      if (stored) {
+        const u = JSON.parse(stored);
+        if (u.email && adminEmails.includes(u.email.toLowerCase())) {
+          return true;
+        }
+      }
+    } catch {}
+  }
+
+  // 3. Fast check for bootstrap admin email via environment variables
   const currentEmail = auth?.currentUser?.email?.toLowerCase();
   
   if (currentEmail) {
-    const adminEmailsStr = import.meta.env.VITE_ADMIN_EMAILS || '';
-    const adminEmails = adminEmailsStr.split(',').map((e: string) => e.trim().toLowerCase());
-    
     if (adminEmails.includes(currentEmail)) {
       return true;
     }
   }
 
-  // 2. Check current user's Firebase Auth Custom Claims (using cached claims first)
+  // 3. Check current user's Firebase Auth Custom Claims (using cached claims first)
   if (auth?.currentUser && auth.currentUser.uid === userId) {
     try {
       const tokenResult = await auth.currentUser.getIdTokenResult(false);
@@ -89,7 +132,7 @@ export async function verifyUserAdminRole(userId: string): Promise<boolean> {
     }
   }
 
-  // 3. Check Firestore /users/{userId} document
+  // 4. Check Firestore /users/{userId} document
   if (db) {
     try {
       const userDocRef = doc(db, 'users', userId);
@@ -131,16 +174,81 @@ export async function setUserRoleInFirestore(userId: string, email: string, role
  * Fetch all registered businesses from Firestore for Platform Admins.
  * Strictly verifies admin role so standard tenants cannot scrape platform directory.
  */
-export async function fetchAllBusinesses(requesterUserId?: string): Promise<Business[]> {
-  const currentUid = requesterUserId || auth?.currentUser?.uid;
+export async function fetchAllBusinesses(requesterUserId?: string, requesterEmail?: string): Promise<Business[]> {
+  let currentUid = requesterUserId || auth?.currentUser?.uid;
+  let currentEmail = requesterEmail || auth?.currentUser?.email?.toLowerCase();
+
+  if (isSupabaseConfigured) {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!currentUid) currentUid = session?.user?.id;
+    if (!currentEmail) currentEmail = session?.user?.email?.toLowerCase();
+  }
+
+  if (typeof window !== 'undefined') {
+    try {
+      const storedUser = localStorage.getItem('zellonai_user');
+      if (storedUser) {
+        const parsed = JSON.parse(storedUser);
+        if (!currentUid) currentUid = parsed.uid || parsed.id;
+        if (!currentEmail) currentEmail = parsed.email?.toLowerCase();
+      }
+    } catch {}
+  }
+
   if (!currentUid) {
     throw new AppError('Authentication Required: Admin sign-in is required.', 401, 'UNAUTHORIZED');
   }
-  const isAuthorizedAdmin = await verifyUserAdminRole(currentUid);
+  const isAuthorizedAdmin = await verifyUserAdminRole(currentUid, currentEmail);
   if (!isAuthorizedAdmin) {
     throw new AppError('Forbidden: Only authorized platform administrators can access the business directory.', 403, 'FORBIDDEN');
   }
 
+  // 1. Primary: Fetch from Supabase
+  if (isSupabaseConfigured) {
+    try {
+      const { data, error } = await supabase
+        .from('businesses')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (!error && data && data.length > 0) {
+        const { data: fbData } = await supabase.from('feedback').select('business_id, rating, google_redirected');
+        const statsMap = new Map<string, any>();
+        if (fbData) {
+          fbData.forEach((fb: any) => {
+            const bId = fb.business_id;
+            const current = statsMap.get(bId) || { totalFeedback: 0, ratingSum: 0, fiveStarCount: 0, googleClicks: 0 };
+            current.totalFeedback++;
+            current.ratingSum += (fb.rating || 5);
+            if (fb.rating === 5) current.fiveStarCount++;
+            if (fb.google_redirected) current.googleClicks++;
+            statsMap.set(bId, current);
+          });
+        }
+
+        const items: Business[] = data.map((row: any) => {
+          const biz = mapSupabaseBusiness(row);
+          const s = statsMap.get(biz.id);
+          if (s && s.totalFeedback > 0) {
+            biz.stats = {
+              totalFeedback: s.totalFeedback,
+              averageRating: Number((s.ratingSum / s.totalFeedback).toFixed(1)),
+              fiveStarCount: s.fiveStarCount,
+              googleClicks: s.googleClicks,
+            };
+          }
+          return biz;
+        });
+
+        saveLocalAllBusinesses(items);
+        return items;
+      }
+    } catch (err) {
+      console.warn('Supabase fetchAllBusinesses notice:', err);
+    }
+  }
+
+  // 2. Fallback: Firebase Firestore
   if (db) {
     try {
       const businessesRef = collection(db, 'businesses');
@@ -203,6 +311,22 @@ export async function updateBusinessStatus(
   }
 
   const isActive = newStatus === 'active';
+
+  if (isSupabaseConfigured && businessId) {
+    try {
+      const { error } = await supabase
+        .from('businesses')
+        .update({
+          status: newStatus,
+          is_active: isActive,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', businessId);
+      if (error) console.warn('Supabase update status warning:', error.message);
+    } catch (err) {
+      console.error('Error updating business status in Supabase:', err);
+    }
+  }
 
   if (db && businessId) {
     try {
@@ -314,18 +438,63 @@ export async function fetchPlatformFeedback(
     search?: string;
     rating?: number;
   },
-  requesterUserId?: string
+  requesterUserId?: string,
+  requesterEmail?: string
 ): Promise<FeedbackItem[]> {
-  const currentUid = requesterUserId || auth?.currentUser?.uid;
+  let currentUid = requesterUserId || auth?.currentUser?.uid;
+  let currentEmail = requesterEmail || auth?.currentUser?.email?.toLowerCase();
+
+  if (isSupabaseConfigured) {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!currentUid) currentUid = session?.user?.id;
+    if (!currentEmail) currentEmail = session?.user?.email?.toLowerCase();
+  }
+
+  if (typeof window !== 'undefined') {
+    try {
+      const storedUser = localStorage.getItem('zellonai_user');
+      if (storedUser) {
+        const parsed = JSON.parse(storedUser);
+        if (!currentUid) currentUid = parsed.uid || parsed.id;
+        if (!currentEmail) currentEmail = parsed.email?.toLowerCase();
+      }
+    } catch {}
+  }
+
   if (!currentUid) {
     throw new AppError('Authentication Required: Admin sign-in is required.', 401, 'UNAUTHORIZED');
   }
-  const isAuthorizedAdmin = await verifyUserAdminRole(currentUid);
+  const isAuthorizedAdmin = await verifyUserAdminRole(currentUid, currentEmail);
   if (!isAuthorizedAdmin) {
     throw new AppError('Forbidden: Only authorized platform administrators can access the platform feedback stream.', 403, 'FORBIDDEN');
   }
 
   let items: FeedbackItem[] = [];
+
+  // 1. Try Supabase
+  if (isSupabaseConfigured) {
+    try {
+      let q = supabase
+        .from('feedback')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      if (options?.businessId && options.businessId !== 'all') {
+        q = q.eq('business_id', options.businessId);
+      }
+      if (options?.rating) {
+        q = q.eq('rating', options.rating);
+      }
+
+      const { data, error } = await q;
+      if (!error && data && data.length > 0) {
+        return data.map(mapSupabaseFeedback);
+      }
+    } catch (err) {
+      console.warn('Supabase fetchPlatformFeedback notice:', err);
+    }
+  }
 
   if (db) {
     try {
